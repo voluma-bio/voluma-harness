@@ -18,7 +18,8 @@ must be ratified first. See the design corpus.
 
 ## Design corpus (read before building)
 
-`docs/work/meridian-rewrite-design/` — carried forward from the meridian-cli
+The `meridian-rewrite-design` work item — in the docs repo (`voluma-bio/docs`),
+resolve with `meridian context work` — carried forward from the meridian-cli
 rewrite design. Start here:
 
 - `review/SYNTHESIS.md` — adversarial-review synthesis; what survives, what fails.
@@ -31,7 +32,7 @@ rewrite design. Start here:
 
 ## Conventions
 
-- Docs: `docs/work/` (design/work items) and `docs/kb/` live in-repo;
-  `strategy/` externalizes to `voluma-bio/docs`.
+- Docs: `work`/`kb`/`strategy` all externalize to `voluma-bio/docs` (resolve
+  with `meridian context`); nothing docs-wise lives in this code repo.
 - Never edit generated target dirs (`.claude/`, `.codex/`, `.opencode/`, `.pi/`,
   `.cursor/`) — owned by `mars sync`.

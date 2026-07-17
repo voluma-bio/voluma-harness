@@ -1,4 +1,4 @@
-# Meridian configuration — voluma-harness (v1 primary docs + code repo)
+# Meridian configuration — voluma-harness (v1 code repo)
 # Env vars (MERIDIAN_*) take precedence over file values.
 
 [defaults]
@@ -18,22 +18,30 @@ agent = "product-lead"
 # retention_days = 30
 
 # -- Context ------------------------------------------------------------------
-# voluma-harness is the PRIMARY docs home: work/ and kb/ live in-repo (source =
-# "local"), versioned alongside the code. Only strategy is externalized to the
-# shared voluma-bio/docs repo (business strategy stays private there).
+# Docs live in the shared voluma-bio/docs repo (the "org brain") — the same repo
+# the retired voluma v0 used. work/kb/strategy externalize there; nothing
+# docs-wise lives in this code repo.
 [context.work]
-source = "local"
-path = "docs/work"
-archive = "docs/archive/work"
+source = "git"
+remote = "git@github.com:voluma-bio/docs.git"
+path = "work"
+archive = "archive/voluma-harness/work"
 
 [context.kb]
-source = "local"
-path = "docs/kb"
+source = "git"
+remote = "git@github.com:voluma-bio/docs.git"
+path = "kb"
 
 [context.strategy]
 source = "git"
 remote = "git@github.com:voluma-bio/docs.git"
 path = "strategy"
+
+# -- Hooks --------------------------------------------------------------------
+# Auto-sync work/kb/strategy back to the docs repo.
+[[hooks]]
+builtin = "git-autosync"
+remote = "git@github.com:voluma-bio/docs.git"
 
 # -- Workspace roots ----------------------------------------------------------
 [workspace.sibling-repos]
