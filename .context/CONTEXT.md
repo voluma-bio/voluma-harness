@@ -7,17 +7,21 @@ needs before changing structure.
 ## Architecture frame
 
 **The loop.** voluma-harness owns context assembly → model call → tool dispatch
-→ repeat. Models are reached through an `AgentDriver`: an *endpoint driver*
-(OpenAI-shaped local or hosted endpoint) or a *subprocess driver* (an external
-harness run as a child, for subscription auth or interop). Endpoint drivers are
-the native path; subprocess is the fallback.
+→ repeat. Models are reached through an `AgentDriver` as an *endpoint driver*
+(OpenAI-shaped local or hosted endpoint). **v1 has no subprocess driver** — the
+external-harness-as-child bridge was cut (2026-07-16); the driver slot is
+reserved. External harnesses interact with voluma only as unmanaged clients
+(mars-synced package → voluma surfaces), never as children voluma wraps.
 
 **Model access — sanction tiers** (see `review/subscription-auth-reality.md`):
 - Foundation, sanctioned: vendor API keys + local models (Ollama/vLLM/MLX),
   endpoint-first (detect a running endpoint before spawning one).
 - Native subscription, gray-area/opt-in/revocable: ChatGPT, Copilot, xAI OAuth.
-- Subprocess bridge: the only legitimate Claude Pro/Max path (Anthropic
-  prohibits third-party OAuth).
+- Subprocess bridge: still the only legitimate Claude Pro/Max path (Anthropic
+  prohibits third-party OAuth) -- but NOT a v1 voluma feature (cut
+  2026-07-16). v1: Claude via metered API only; subscription users run Claude
+  Code externally against a mars-synced package that calls voluma as an
+  unmanaged client. "Harness adapter" is a reserved term; no adapter in v1.
 
 **Routing** (see `review/execution-decisions.md` §6): a model is a capability
 with sanction-ranked routes {api-key, native-oauth, subprocess, local}. The

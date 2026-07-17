@@ -23,12 +23,15 @@ See `.context/TODO`.
 
 - **Runtime, not orchestrator.** This process owns the loop and runs its own
   tools. "Coordinate agents, don't control them" was v0/meridian-cli — gone.
-- **One word, two senses.** *voluma-harness* is the product (the harness you run
-  agents in). A *harness adapter* is an optional internal bridge to an external
-  harness (Claude Code/Codex) run as a subprocess — a fallback, not the spine.
+- **One sense of "harness".** *voluma-harness* IS the harness. No harness
+  adapter ships in v1 (the Claude Code subprocess bridge was cut 2026-07-16;
+  its contracts are reserved). External harnesses reach voluma only as
+  **unmanaged clients** — a mars-synced package lets Claude Code *call*
+  voluma under scoped grants; voluma never wraps external CLIs.
 - **Model access is tiered by sanction.** Sanctioned foundation: API keys +
-  local models. Everything else (subscription OAuth, subprocess bridges) is
-  opt-in and degrades to that foundation. Details in `.context/CONTEXT.md`.
+  local models. Gray-area subscription OAuth (ChatGPT/Copilot/Grok) is
+  opt-in, in-process, and degrades to that foundation. Claude models are
+  **API-route only** in v1. Details in `.context/CONTEXT.md`.
 - **Docs live elsewhere.** work/kb/strategy externalize to `voluma-bio/docs`;
   this repo is code-only.
 
@@ -41,7 +44,9 @@ See `.context/TODO`.
   channel, token, or cwd is not authorization (the C1 confused deputy). Honor
   this in every seam — it is D1.
 - **Never ride a Claude Pro/Max subscription in-process** — Anthropic prohibits
-  third-party OAuth and enforces without notice. Subprocess Claude Code, or API.
+  third-party OAuth and enforces without notice. In v1: Claude via API only;
+  subscription users run Claude Code themselves against the inverted
+  mars-package route (Claude Code as voluma's client, not vice versa).
 - **Never edit generated target dirs** (`.claude/`, `.codex/`, `.opencode/`,
   `.pi/`, `.cursor/`) — owned by `mars sync`.
 - **Dependency direction is one-way:** voluma-harness → published `voluma`
