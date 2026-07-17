@@ -1,38 +1,60 @@
 # voluma-harness
 
-A **local-first AI agent runtime**. Owns its own agent loop (context assembly →
-model call → tool dispatch), runs directly against local + hosted models, and
-lands all agent edits through a shared CRDT `write` authority. Successor to
-meridian-cli (Python coordinator) and voluma v0 (cloud) — not a coordinator of
-other harnesses; a harness in its own right.
+A **local-first AI agent runtime**. It owns its agent loop (context → model →
+tool → repeat), runs directly against local and hosted models, and lands every
+agent edit through a shared CRDT `write` authority — the write seam is the
+reason this product exists. Successor to meridian-cli (Python coordinator) and
+voluma v0 (cloud). It **is** a harness, not a coordinator of harnesses; the
+cloud/sync backend is a separate repo (`voluma`).
 
-- **License:** MIT (open-core; protective/cloud sync is a separate concern).
-- **References** `voluma` for optional online sync; runs fully offline without it.
-- **Downstream:** may be forked into `meridian-flow` (writing-focused vertical).
+MIT (open-core — the moat is the cloud, not the harness). May be forked into
+`meridian-flow`, a writing-focused vertical.
 
-## Status
+## Status: pre-build
 
-Pre-build. The architecture is **not yet a build target** — three root-cause
-decisions (D1 auth/RequestContext, D2 identity, D3 event/outcome/catalog split)
-must be ratified first. See the design corpus.
+The architecture is **not a build target yet**. Two root-cause decisions gate
+it — **D1** (authenticated RequestContext) and **D3** (event/outcome/catalog
+split) are unratified; **D2** (identity) is decided. Do not implement against
+`v1-architecture.md` until D1 and D3 land; everything downstream inherits them.
+See `.context/TODO`.
 
-## Design corpus (read before building)
+## Mental model
 
-The `meridian-rewrite-design` work item — in the docs repo (`voluma-bio/docs`),
-resolve with `meridian context work` — carried forward from the meridian-cli
-rewrite design. Start here:
+- **Runtime, not orchestrator.** This process owns the loop and runs its own
+  tools. "Coordinate agents, don't control them" was v0/meridian-cli — gone.
+- **One word, two senses.** *voluma-harness* is the product (the harness you run
+  agents in). A *harness adapter* is an optional internal bridge to an external
+  harness (Claude Code/Codex) run as a subprocess — a fallback, not the spine.
+- **Model access is tiered by sanction.** Sanctioned foundation: API keys +
+  local models. Everything else (subscription OAuth, subprocess bridges) is
+  opt-in and degrades to that foundation. Details in `.context/CONTEXT.md`.
+- **Docs live elsewhere.** work/kb/strategy externalize to `voluma-bio/docs`;
+  this repo is code-only.
 
-- `review/SYNTHESIS.md` — adversarial-review synthesis; what survives, what fails.
-- `review/root-cause-decisions.md` — **D1–D3, the gate.** D2 (identity) is decided;
-  D1 and D3 are not.
-- `review/execution-decisions.md` — repo topology, name, MIT license, model access
-  (sanction tiers), routing/failover, local hosting, catalog, observability.
-- `review/local-model-hosting.md`, `review/subscription-auth-reality.md` — verified
-  research (endpoint-first local hosting; how subscriptions actually auth).
+## Key rules
 
-## Conventions
+- **Build gate:** D1 + D3 unratified → `v1-architecture.md` is design, not spec.
+- **Identity is daemon-constructed, never surface-inferred.** A caller's
+  channel, token, or cwd is not authorization (the C1 confused deputy). Honor
+  this in every seam — it is D1.
+- **Never ride a Claude Pro/Max subscription in-process** — Anthropic prohibits
+  third-party OAuth and enforces without notice. Subprocess Claude Code, or API.
+- **Never edit generated target dirs** (`.claude/`, `.codex/`, `.opencode/`,
+  `.pi/`, `.cursor/`) — owned by `mars sync`.
+- **Dependency direction is one-way:** voluma-harness → published `voluma`
+  contracts, never the reverse.
 
-- Docs: `work`/`kb`/`strategy` all externalize to `voluma-bio/docs` (resolve
-  with `meridian context`); nothing docs-wise lives in this code repo.
-- Never edit generated target dirs (`.claude/`, `.codex/`, `.opencode/`, `.pi/`,
-  `.cursor/`) — owned by `mars sync`.
+## Anti-patterns
+
+- Rebuilding a coordinator-of-harnesses. The native loop is the product.
+- Depending on subscription routes. They are gray-area and revocable; design
+  for failover to the sanctioned API+local foundation, not for reliance on them.
+- Silent model/cost swaps on failover — route changes need consent + a budget
+  check + a domain event.
+
+## Downlinks
+
+- `.context/CONTEXT.md` — architecture frame, rationale, dependency contracts.
+- `.context/TODO` — the build gate (D1, D3, honesty pass).
+- Design corpus: `meridian context work` → `meridian-rewrite-design/review/`
+  (SYNTHESIS → root-cause-decisions → execution-decisions).

@@ -1,0 +1,14 @@
+# TODO — build gate
+
+Ratify before `v1-architecture.md` becomes a build target. Each blocks
+downstream packages. Full framing: `meridian-rewrite-design/review/root-cause-decisions.md`.
+
+- [ ] D1 — authenticated RequestContext + credential model. Kills the
+  surface-as-identity confused deputy (C1); unblocks write attribution (C4) and
+  query trust (C8). Recommended option: daemon-constructed RequestContext.
+- [ ] D3 — split the one "event" into raw / typed domain event / RunOutcome.
+  Resolves the opaque HarnessEvent (C3) and the mars catalog boundary (C6).
+- [ ] §13 honesty pass — re-label overclaimed Carries; decide the
+  meridian→voluma rename rollout (compat shim vs atomic Break).
+
+D2 (identity) is decided — see root-cause-decisions.md.
