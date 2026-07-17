@@ -1,14 +1,15 @@
-# TODO -- P0 frozen, lanes running (2026-07-17)
+# TODO -- dogfood milestone done (2026-07-17)
 
-D1/D2/D3/section-13 ratified (2026-07-16). P0 walking skeleton frozen at
-`v1-bootstrap` commit `ece3253` (schema, contracts, daemon lifecycle).
-`v1-architecture.md` fold-in landed (standing spec).
+P0→P4 complete at 98fbe54 on `v1-bootstrap`; G2 gate clear; 89 tests x5
+green, `bun run dogfood` green. Deferred work consolidated at
+`build/deferred-work.md` (work dir). P5+ not started — opens only after a
+design pass + owner decision.
 
-- [x] Build gate -- ratified decided models
-- [x] P0 -- schema + contracts + daemon + CLI walking skeleton
-- [ ] Lane A -- P1 auth kernel (`lane-a-p1-auth`)
-- [ ] Lane B1 -- P2 loop + finalize (`lane-b1-p2-loop`)
-- [ ] Lane C -- P4a mars compiler (`lane-c-p4a-mars`)
-- [ ] B2 driver sublane -- held, owner decision pending (adopt-partially
-  recommended, `build/research/p2-provider-layer.md`)
-- [ ] G1 gate -- A + B1 converge: stub swap + review fan-out on the kernel
+- [x] Build gate -- ratified decided models (D1/D2/D3/section-13)
+- [x] P0 -- schema + contracts + daemon + CLI walking skeleton (ece3253)
+- [x] P1 -- auth kernel and G1 hardening
+- [x] P2 -- native loop + singular finalize
+- [x] P4a -- deterministic mars compiler and published launch plans
+- [x] G1/G1.5 -- merge on v1-bootstrap, auth + loop + compiler
+- [x] P3 -- spawn lifecycle, invocation-lease latching, gate fix (PB1/PB2)
+- [x] G2 -- catalog-spawn wiring, aud=query grants, dogfood (98fbe54)

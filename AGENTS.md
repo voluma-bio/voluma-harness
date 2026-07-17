@@ -10,12 +10,12 @@ cloud/sync backend is a separate repo (`voluma`).
 MIT (open-core — the moat is the cloud, not the harness). May be forked into
 `meridian-flow`, a writing-focused vertical.
 
-## Status: P0 frozen at ece3253, lanes A/B1/C running (2026-07-17)
+## Status: dogfood milestone reached at 98fbe54 (2026-07-17)
 
-**D1, D2, D3 and the §13 honesty pass are ratified.** The P0 walking skeleton
-(schema, contracts, daemon lifecycle) is frozen on `v1-bootstrap` at `ece3253`.
-Lanes A (P1 auth kernel), B1 (P2 loop+finalize), and C (P4a mars compiler) are
-running on separate worktrees. See `.context/TODO`.
+**P0→P4 build complete; G2 gate clear.** 89 tests x5 green, `bun run dogfood`
+green. Deferred work consolidated in the work dir's `build/deferred-work.md`.
+P5+ not started — opens only after a design pass + owner decision. See
+`.context/TODO`.
 
 ## Mental model
 
