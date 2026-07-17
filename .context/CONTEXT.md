@@ -1,8 +1,8 @@
 # voluma-harness — context
 
-The full argument lives in the design corpus (`meridian context work` →
-`meridian-rewrite-design/review/`). This file holds the durable frame an agent
-needs before changing structure; the corpus holds the reasoning behind it.
+The full design argument lives in the corpus (`meridian context work` →
+`meridian-rewrite-design/review/`); this file holds the durable frame an agent
+needs before changing structure.
 
 ## Architecture frame
 
