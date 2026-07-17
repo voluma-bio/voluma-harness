@@ -12,22 +12,21 @@ MIT (open-core — the moat is the cloud, not the harness). May be forked into
 
 ## Status: build gate closed (2026-07-16), build-prep next
 
-**D1, D2, D3 and the §13 honesty pass are all ratified** — decided models in
+**D1, D2, D3 and the §13 honesty pass are ratified** — decided models in
 `meridian-rewrite-design/review/root-cause-decisions.md`. `v1-architecture.md`
-is buildable **through the decided models**: it predates ratification and
-carries a supersession banner — where its text conflicts with the decided
-models, the decided models win. Folding them in is the first build-prep task.
-See `.context/TODO`.
+predates ratification: where its text conflicts with the decided models, the
+decided models win. Folding them in is the first build-prep task. See
+`.context/TODO`.
 
 ## Mental model
 
 - **Runtime, not orchestrator.** This process owns the loop and runs its own
   tools. "Coordinate agents, don't control them" was v0/meridian-cli — gone.
-- **One sense of "harness".** *voluma-harness* IS the harness. No harness
-  adapter ships in v1 (the Claude Code subprocess bridge was cut 2026-07-16;
-  its contracts are reserved). External harnesses reach voluma only as
-  **unmanaged clients** — a mars-synced package lets Claude Code *call*
-  voluma under scoped grants; voluma never wraps external CLIs.
+- **One sense of "harness".** *voluma-harness* IS the harness; it never wraps
+  external CLIs. External harnesses (Claude Code, Codex) reach voluma only as
+  **unmanaged clients** — a mars-synced package lets them *call* voluma under
+  scoped grants. No harness adapter in v1; the bridge contracts are reserved
+  in the decision log.
 - **Model access is tiered by sanction.** Sanctioned foundation: API keys +
   local models. Gray-area subscription OAuth (ChatGPT/Copilot/Grok) is
   opt-in, in-process, and degrades to that foundation. Claude models are
@@ -44,9 +43,9 @@ See `.context/TODO`.
   channel, token, or cwd is not authorization (the C1 confused deputy). Honor
   this in every seam — it is D1.
 - **Never ride a Claude Pro/Max subscription in-process** — Anthropic prohibits
-  third-party OAuth and enforces without notice. In v1: Claude via API only;
-  subscription users run Claude Code themselves against the inverted
-  mars-package route (Claude Code as voluma's client, not vice versa).
+  third-party OAuth and enforces without notice. v1 serves Claude via API
+  only; subscription users run Claude Code as voluma's client (mars package),
+  never the reverse.
 - **Never edit generated target dirs** (`.claude/`, `.codex/`, `.opencode/`,
   `.pi/`, `.cursor/`) — owned by `mars sync`.
 - **Dependency direction is one-way:** voluma-harness → published `voluma`
@@ -63,6 +62,6 @@ See `.context/TODO`.
 ## Downlinks
 
 - `.context/CONTEXT.md` — architecture frame, rationale, dependency contracts.
-- `.context/TODO` — the build gate (D1, D3, honesty pass).
+- `.context/TODO` — build-gate record and what build-prep does next.
 - Design corpus: `meridian context work` → `meridian-rewrite-design/review/`
   (SYNTHESIS → root-cause-decisions → execution-decisions).

@@ -7,27 +7,27 @@ needs before changing structure.
 ## Architecture frame
 
 **The loop.** voluma-harness owns context assembly → model call → tool dispatch
-→ repeat. Models are reached through an `AgentDriver` as an *endpoint driver*
-(OpenAI-shaped local or hosted endpoint). **v1 has no subprocess driver** — the
-external-harness-as-child bridge was cut (2026-07-16); the driver slot is
-reserved. External harnesses interact with voluma only as unmanaged clients
-(mars-synced package → voluma surfaces), never as children voluma wraps.
+→ repeat. Models are reached through endpoint drivers (OpenAI-shaped local or
+hosted endpoints) — the only `AgentDriver` kind in v1. voluma never runs an
+external harness as a child; external harnesses interact with it only as
+unmanaged clients (mars-synced package → voluma surfaces). A subprocess driver
+slot stays reserved in the decision log.
 
 **Model access — sanction tiers** (see `review/subscription-auth-reality.md`):
 - Foundation, sanctioned: vendor API keys + local models (Ollama/vLLM/MLX),
   endpoint-first (detect a running endpoint before spawning one).
 - Native subscription, gray-area/opt-in/revocable: ChatGPT, Copilot, xAI OAuth.
-- Subprocess bridge: still the only legitimate Claude Pro/Max path (Anthropic
-  prohibits third-party OAuth) -- but NOT a v1 voluma feature (cut
-  2026-07-16). v1: Claude via metered API only; subscription users run Claude
-  Code externally against a mars-synced package that calls voluma as an
-  unmanaged client. "Harness adapter" is a reserved term; no adapter in v1.
+- Subprocess bridge, not in v1: running the vendor's official client is the
+  only legitimate Claude Pro/Max path (Anthropic prohibits third-party OAuth),
+  so v1 serves Claude via metered API only. Subscription users run Claude Code
+  themselves against a mars-synced package that calls voluma as an unmanaged
+  client.
 
 **Routing** (see `review/execution-decisions.md` §6): a model is a capability
-with sanction-ranked routes {api-key, native-oauth, subprocess, local}. The
-broker (D1 RequestContext) picks the route, fails over on block with consent +
-budget check, hard-quarantines routes that ban us, and never offers prohibited
-ones.
+with sanction-ranked routes — {api-key, native-oauth, local} in v1, subprocess
+reserved. The broker (D1 RequestContext) picks the route, fails over on block
+with consent + budget check, hard-quarantines routes that ban us, and never
+offers prohibited ones.
 
 **The three root causes** (all ratified 2026-07-16):
 - **D1** — daemon-constructed RequestContext: surfaces authenticate, `lib/ops`
@@ -42,7 +42,9 @@ ones.
   domain events (the public surface for queries/webhooks/replay) / durable
   singular `RunOutcome` via one `finalize()` transaction. Mars = compiler with
   `dirty -> publishing -> published` state machine; ResolvedLaunchPlan + typed
-  LaunchBindings. §13 honesty pass: rename = atomic Break, no shim.
+  LaunchBindings.
+- **§13 honesty pass** — the registry states real statuses; the
+  `meridian`→`voluma` rename is an atomic Break, no compat shim.
 
 **Write seam (C4).** The CRDT `write` capability is the differentiator and must
 be an authority protocol — idempotency key, planning base, transactional
