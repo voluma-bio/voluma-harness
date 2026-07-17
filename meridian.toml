@@ -23,12 +23,12 @@ agent = "product-lead"
 # shared voluma-bio/docs repo (business strategy stays private there).
 [context.work]
 source = "local"
-path = "work"
-archive = "archive/work"
+path = "docs/work"
+archive = "docs/archive/work"
 
 [context.kb]
 source = "local"
-path = "kb"
+path = "docs/kb"
 
 [context.strategy]
 source = "git"
