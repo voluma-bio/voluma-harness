@@ -1,21 +1,14 @@
-# TODO — build gate: CLOSED 2026-07-16
+# TODO -- P0 frozen, lanes running (2026-07-17)
 
-All three gate items are ratified. Decided models:
-`meridian-rewrite-design/review/root-cause-decisions.md`.
+D1/D2/D3/section-13 ratified (2026-07-16). P0 walking skeleton frozen at
+`v1-bootstrap` commit `ece3253` (schema, contracts, daemon lifecycle).
+`v1-architecture.md` fold-in landed (standing spec).
 
-- [x] D1 — daemon-constructed RequestContext; spawn-scoped bearer +
-  daemon-issued invocation lease; broker-mediated secrets; two-field
-  evidence-based `enforcement_assurance`; friction invariant (credential
-  machinery invisible to end users).
-- [x] D2 — identity: `{replica_id, local_seq}` portable IDs, display aliases,
-  workspace/mount split.
-- [x] D3 — raw provider event (private) / typed versioned domain events
-  (public) / durable singular RunOutcome via one `finalize()` transaction;
-  mars = compiler with `dirty → publishing → published` state machine, no
-  mars in the spawn path; ResolvedLaunchPlan + typed LaunchBindings.
-- [x] §13 honesty pass — registry relabeled against the coverage matrix
-  (v1-architecture.md §13.1–13.5); rename = atomic Break, no shim.
-
-Next: build-prep. `v1-architecture.md` carries a supersession banner — where
-it conflicts with the decided models, the decided models win; folding them
-into its text is the first tech-lead task. Then work §13.4/§13.5 down.
+- [x] Build gate -- ratified decided models
+- [x] P0 -- schema + contracts + daemon + CLI walking skeleton
+- [ ] Lane A -- P1 auth kernel (`lane-a-p1-auth`)
+- [ ] Lane B1 -- P2 loop + finalize (`lane-b1-p2-loop`)
+- [ ] Lane C -- P4a mars compiler (`lane-c-p4a-mars`)
+- [ ] B2 driver sublane -- held, owner decision pending (adopt-partially
+  recommended, `build/research/p2-provider-layer.md`)
+- [ ] G1 gate -- A + B1 converge: stub swap + review fan-out on the kernel

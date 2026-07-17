@@ -10,13 +10,12 @@ cloud/sync backend is a separate repo (`voluma`).
 MIT (open-core — the moat is the cloud, not the harness). May be forked into
 `meridian-flow`, a writing-focused vertical.
 
-## Status: build gate closed (2026-07-16), build-prep next
+## Status: P0 frozen at ece3253, lanes A/B1/C running (2026-07-17)
 
-**D1, D2, D3 and the §13 honesty pass are ratified** — decided models in
-`meridian-rewrite-design/review/root-cause-decisions.md`. `v1-architecture.md`
-predates ratification: where its text conflicts with the decided models, the
-decided models win. Folding them in is the first build-prep task. See
-`.context/TODO`.
+**D1, D2, D3 and the §13 honesty pass are ratified.** The P0 walking skeleton
+(schema, contracts, daemon lifecycle) is frozen on `v1-bootstrap` at `ece3253`.
+Lanes A (P1 auth kernel), B1 (P2 loop+finalize), and C (P4a mars compiler) are
+running on separate worktrees. See `.context/TODO`.
 
 ## Mental model
 
@@ -37,8 +36,8 @@ decided models win. Folding them in is the first build-prep task. See
 ## Key rules
 
 - **Build gate closed:** implement against the ratified decided models
-  (`review/root-cause-decisions.md`); `v1-architecture.md` text yields to them
-  wherever they conflict, until the fold-in lands.
+  (`review/root-cause-decisions.md`). `v1-architecture.md` is now the standing
+  spec (fold-in landed).
 - **Identity is daemon-constructed, never surface-inferred.** A caller's
   channel, token, or cwd is not authorization (the C1 confused deputy). Honor
   this in every seam — it is D1.
@@ -62,6 +61,6 @@ decided models win. Folding them in is the first build-prep task. See
 ## Downlinks
 
 - `.context/CONTEXT.md` — architecture frame, rationale, dependency contracts.
-- `.context/TODO` — build-gate record and what build-prep does next.
+- `.context/TODO` — build progress: gate, P0, lane status.
 - Design corpus: `meridian context work` → `meridian-rewrite-design/review/`
   (SYNTHESIS → root-cause-decisions → execution-decisions).
