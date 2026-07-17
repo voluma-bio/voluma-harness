@@ -1,0 +1,1329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>meridian v1 — Design</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<style>
+  @font-face {
+    font-family: 'Iosevka';
+    src: local('Iosevka'), local('Iosevka Term');
+  }
+
+  :root {
+    --bg: #fafaf8;
+    --bg-surface: #ffffff;
+    --bg-code: #f4f3f0;
+    --bg-accent: #e8f0fe;
+    --text: #1a1a1a;
+    --text-secondary: #555;
+    --text-muted: #888;
+    --accent: #2563eb;
+    --accent-dim: #4b83ed;
+    --border: #e0ddd8;
+    --border-light: #eae8e4;
+    --tag-bg: #e0edff;
+    --tag-text: #1d4ed8;
+    --carry-bg: #e6f4ea;
+    --carry-text: #137333;
+    --redesign-bg: #fff3e0;
+    --redesign-text: #b45309;
+    --break-bg: #fce8e6;
+    --break-text: #c5221f;
+    --nav-bg: #f5f4f2;
+    --nav-hover: #eae8e4;
+    --shadow-sm: 0 1px 2px rgba(0,0,0,.05);
+    --shadow-md: 0 2px 8px rgba(0,0,0,.08);
+    --mono: 'Iosevka', 'JetBrains Mono', 'Fira Code', ui-monospace, monospace;
+    --body: 'Inter', system-ui, -apple-system, sans-serif;
+    --display: 'Inter', system-ui, -apple-system, sans-serif;
+  }
+
+  .dark {
+    --bg: #111113;
+    --bg-surface: #1a1a1e;
+    --bg-code: #1e1e22;
+    --bg-accent: #1a2744;
+    --text: #e4e4e4;
+    --text-secondary: #aaa;
+    --text-muted: #666;
+    --accent: #6ea8fe;
+    --accent-dim: #5b8fdf;
+    --border: #2a2a2e;
+    --border-light: #222226;
+    --tag-bg: #1a2744;
+    --tag-text: #6ea8fe;
+    --carry-bg: #1a2e1a;
+    --carry-text: #6bc76b;
+    --redesign-bg: #2e2318;
+    --redesign-text: #f0a040;
+    --break-bg: #2e1a1a;
+    --break-text: #f06060;
+    --nav-bg: #18181c;
+    --nav-hover: #222226;
+    --shadow-sm: 0 1px 2px rgba(0,0,0,.2);
+    --shadow-md: 0 2px 8px rgba(0,0,0,.3);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+
+  body {
+    font-family: var(--body);
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    margin: 0;
+    padding: 0;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .layout {
+    display: grid;
+    grid-template-columns: 260px 1fr;
+    min-height: 100vh;
+  }
+
+  @media (max-width: 900px) {
+    .layout { grid-template-columns: 1fr; }
+    .sidebar { display: none; }
+    .mobile-nav { display: block; }
+  }
+
+  /* Sidebar */
+  .sidebar {
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+    background: var(--nav-bg);
+    border-right: 1px solid var(--border);
+    padding: 24px 16px;
+    font-size: 13px;
+  }
+
+  .sidebar-title {
+    font-weight: 700;
+    font-size: 14px;
+    letter-spacing: .02em;
+    margin-bottom: 4px;
+    color: var(--text);
+  }
+
+  .sidebar-subtitle {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-bottom: 20px;
+  }
+
+  .nav-section {
+    margin-bottom: 16px;
+  }
+
+  .nav-section-label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: var(--text-muted);
+    margin-bottom: 6px;
+    padding-left: 8px;
+  }
+
+  .nav-link {
+    display: block;
+    padding: 5px 8px;
+    border-radius: 5px;
+    color: var(--text-secondary);
+    text-decoration: none;
+    transition: background .1s, color .1s;
+  }
+
+  .nav-link:hover {
+    background: var(--nav-hover);
+    color: var(--text);
+  }
+
+  .nav-link.active {
+    background: var(--bg-accent);
+    color: var(--accent);
+    font-weight: 500;
+  }
+
+  .mobile-nav {
+    display: none;
+    background: var(--nav-bg);
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+
+  .mobile-nav select {
+    width: 100%;
+    padding: 8px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--bg-surface);
+    color: var(--text);
+    font-size: 14px;
+  }
+
+  /* Main content */
+  .main {
+    max-width: 820px;
+    padding: 40px 48px 80px;
+    margin: 0 auto;
+    width: 100%;
+  }
+
+  @media (max-width: 900px) {
+    .main { padding: 24px 16px 60px; }
+  }
+
+  h1 {
+    font-family: var(--display);
+    font-size: 28px;
+    font-weight: 800;
+    letter-spacing: -.02em;
+    margin: 0 0 8px;
+    line-height: 1.2;
+  }
+
+  .lead {
+    font-size: 17px;
+    color: var(--text-secondary);
+    margin-bottom: 32px;
+    max-width: 60ch;
+    line-height: 1.55;
+  }
+
+  h2 {
+    font-size: 20px;
+    font-weight: 700;
+    margin: 48px 0 16px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border-light);
+    letter-spacing: -.01em;
+  }
+
+  h3 {
+    font-size: 16px;
+    font-weight: 600;
+    margin: 28px 0 12px;
+    color: var(--text);
+  }
+
+  p {
+    margin: 0 0 14px;
+    max-width: 65ch;
+  }
+
+  code {
+    font-family: var(--mono);
+    font-size: 13px;
+    background: var(--bg-code);
+    padding: 2px 5px;
+    border-radius: 3px;
+  }
+
+  pre {
+    background: var(--bg-code);
+    border: 1px solid var(--border-light);
+    border-radius: 6px;
+    padding: 14px 18px;
+    overflow-x: auto;
+    font-family: var(--mono);
+    font-size: 12.5px;
+    line-height: 1.55;
+    margin: 0 0 18px;
+  }
+
+  pre code {
+    background: none;
+    padding: 0;
+    font-size: inherit;
+  }
+
+  /* Tables */
+  .table-wrap {
+    overflow-x: auto;
+    margin: 0 0 18px;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13.5px;
+  }
+
+  th {
+    text-align: left;
+    font-weight: 600;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    color: var(--text-muted);
+    padding: 8px 12px;
+    border-bottom: 2px solid var(--border);
+  }
+
+  td {
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border-light);
+    vertical-align: top;
+  }
+
+  tr:last-child td { border-bottom: none; }
+
+  /* Tags */
+  .tag {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 4px;
+    letter-spacing: .02em;
+  }
+
+  .tag-carry { background: var(--carry-bg); color: var(--carry-text); }
+  .tag-redesign { background: var(--redesign-bg); color: var(--redesign-text); }
+  .tag-break { background: var(--break-bg); color: var(--break-text); }
+  .tag-blue { background: var(--tag-bg); color: var(--tag-text); }
+
+  /* Cards */
+  .card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 14px;
+    margin: 0 0 18px;
+  }
+
+  .card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .card-title {
+    font-weight: 700;
+    font-size: 14px;
+    margin-bottom: 6px;
+  }
+
+  .card-body {
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+  }
+
+  /* Diagram box */
+  .diagram {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 24px 20px;
+    margin: 0 0 18px;
+    overflow-x: auto;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .diagram pre {
+    background: none;
+    border: none;
+    padding: 0;
+    margin: 0;
+    font-size: 12px;
+    line-height: 1.5;
+  }
+
+  .mermaid {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 24px 20px;
+    margin: 0 0 18px;
+    overflow-x: auto;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .mermaid svg {
+    display: block;
+    margin: 0 auto;
+    max-width: 100%;
+    height: auto;
+  }
+
+  /* Callout */
+  .callout {
+    background: var(--bg-accent);
+    border-left: 3px solid var(--accent);
+    border-radius: 0 6px 6px 0;
+    padding: 14px 18px;
+    margin: 0 0 18px;
+    font-size: 14px;
+  }
+
+  .callout strong {
+    color: var(--accent);
+  }
+
+  /* Collapsible */
+  details {
+    margin: 0 0 14px;
+    border: 1px solid var(--border-light);
+    border-radius: 6px;
+    background: var(--bg-surface);
+  }
+
+  summary {
+    padding: 10px 16px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 14px;
+    user-select: none;
+  }
+
+  summary:hover { background: var(--nav-hover); border-radius: 6px; }
+
+  details[open] summary {
+    border-bottom: 1px solid var(--border-light);
+    border-radius: 6px 6px 0 0;
+  }
+
+  details .detail-body {
+    padding: 14px 16px;
+  }
+
+  /* Build order steps */
+  .build-steps {
+    counter-reset: step;
+    list-style: none;
+    padding: 0;
+  }
+
+  .build-steps li {
+    counter-increment: step;
+    padding: 10px 0 10px 48px;
+    position: relative;
+    border-left: 2px solid var(--border);
+    margin-left: 16px;
+  }
+
+  .build-steps li::before {
+    content: counter(step);
+    position: absolute;
+    left: -13px;
+    top: 8px;
+    width: 24px;
+    height: 24px;
+    background: var(--accent);
+    color: #fff;
+    border-radius: 50%;
+    font-size: 12px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .build-steps li:last-child {
+    border-left-color: transparent;
+  }
+
+  /* Open questions */
+  .question-list {
+    list-style: none;
+    padding: 0;
+  }
+
+  .question-list li {
+    padding: 10px 14px;
+    margin-bottom: 8px;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-light);
+    border-radius: 6px;
+    font-size: 13.5px;
+  }
+
+  .question-list li strong {
+    color: var(--accent);
+  }
+
+  /* Prior art */
+  .prior-art-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 12px;
+    margin: 0 0 18px;
+  }
+
+  .prior-art-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px;
+  }
+
+  .prior-art-card .name {
+    font-weight: 700;
+    font-size: 13px;
+    margin-bottom: 4px;
+  }
+
+  .prior-art-card .insight {
+    font-size: 12px;
+    color: var(--text-secondary);
+    line-height: 1.45;
+  }
+
+  .section { scroll-margin-top: 24px; }
+
+  font-variant-numeric: tabular-nums;
+  .theme-toggle {
+    position: fixed;
+    top: 12px;
+    right: 16px;
+    z-index: 1000;
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 6px 10px;
+    cursor: pointer;
+    font-size: 16px;
+    line-height: 1;
+    box-shadow: var(--shadow-sm);
+  }
+  .theme-toggle:hover { background: var(--nav-hover); }
+</style>
+</head>
+<body>
+
+<button class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle theme">☀️</button>
+
+<div class="layout">
+  <nav class="sidebar" id="sidebar">
+    <div class="sidebar-title">meridian v1</div>
+    <div class="sidebar-subtitle">TypeScript rewrite design</div>
+
+    <div class="nav-section">
+      <div class="nav-section-label">Overview</div>
+      <a class="nav-link" href="#summary">Executive summary</a>
+      <a class="nav-link" href="#surfaces">Product surfaces</a>
+      <a class="nav-link" href="#architecture">System architecture</a>
+    </div>
+    <div class="nav-section">
+      <div class="nav-section-label">Core systems</div>
+      <a class="nav-link" href="#write-seam">CRDT write seam</a>
+      <a class="nav-link" href="#harness">Harness architecture</a>
+      <a class="nav-link" href="#data-model">Data model (SQLite)</a>
+    </div>
+    <div class="nav-section">
+      <div class="nav-section-label">Runtime</div>
+      <a class="nav-link" href="#capability">Capability &amp; security</a>
+      <a class="nav-link" href="#threads">Thread model</a>
+      <a class="nav-link" href="#observability">Observability</a>
+    </div>
+    <div class="nav-section">
+      <div class="nav-section-label">Integration</div>
+      <a class="nav-link" href="#mars">Mars integration</a>
+      <a class="nav-link" href="#cloud-sync">Cloud sync</a>
+      <a class="nav-link" href="#prior-art">Prior art</a>
+    </div>
+    <div class="nav-section">
+      <div class="nav-section-label">Execution</div>
+      <a class="nav-link" href="#invariants">Invariant registry</a>
+      <a class="nav-link" href="#build-order">Build order</a>
+      <a class="nav-link" href="#open-questions">Open questions</a>
+    </div>
+  </nav>
+
+  <div class="mobile-nav">
+    <select onchange="if(this.value) location.hash = this.value">
+      <option value="">Navigate&hellip;</option>
+      <option value="#summary">Executive summary</option>
+      <option value="#surfaces">Product surfaces</option>
+      <option value="#architecture">System architecture</option>
+      <option value="#write-seam">CRDT write seam</option>
+      <option value="#harness">Harness architecture</option>
+      <option value="#data-model">Data model</option>
+      <option value="#capability">Capability &amp; security</option>
+      <option value="#threads">Thread model</option>
+      <option value="#observability">Observability</option>
+      <option value="#mars">Mars integration</option>
+      <option value="#cloud-sync">Cloud sync</option>
+      <option value="#prior-art">Prior art</option>
+      <option value="#invariants">Invariant registry</option>
+      <option value="#build-order">Build order</option>
+      <option value="#open-questions">Open questions</option>
+    </select>
+  </div>
+
+  <main class="main">
+    <!-- ============ SUMMARY ============ -->
+    <section class="section" id="summary">
+      <h1>meridian v1</h1>
+      <p class="lead">
+        Local-first coding-agent platform. Agents and humans co-edit files through
+        CRDTs — edits merge by construction instead of conflicting. One TypeScript daemon,
+        three surfaces, SQLite authority.
+      </p>
+
+      <div class="callout">
+        <strong>Differentiator:</strong> The <code>write</code> capability replaces native file-edit tools.
+        Claude Code gets an MCP tool; subagents get a bash CLI; the webapp gets a live editor.
+        All operate on the same Yjs documents. Nobody else ships merge-by-construction
+        agent editing.
+      </div>
+
+      <div class="card-grid">
+        <div class="card">
+          <div class="card-title">Python 0.x → TypeScript v1</div>
+          <div class="card-body">
+            Python proved multi-agent spawning, prompt packages, and multi-harness orchestration.
+            It also hit the ceiling: 5 harness adapters, PTY hacks, JSONL scans, file-race repair.
+            v1 replaces internals while keeping agent-facing contracts.
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">Shares flow packages</div>
+          <div class="card-body">
+            Not a fork. <code>@meridian/agent-edit</code>, <code>@meridian/contracts</code>,
+            <code>@meridian/prosemirror-schema</code>, and <code>@meridian/markup</code> are
+            npm library dependencies. meridian-flow stays the cloud product.
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">SQLite replaces files-as-state</div>
+          <div class="card-body">
+            WAL mode, Drizzle ORM, transactional writes, append-only journals.
+            Crash-only spirit preserved: recovery IS startup.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ SURFACES ============ -->
+    <section class="section" id="surfaces">
+      <h2>Product surfaces</h2>
+      <p>Three user-visible surfaces share one daemon process. They are not three implementations.</p>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Surface</th><th>Caller</th><th>Primary job</th><th>Write binding</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>CLI</strong></td>
+              <td>Human, Claude Code, subagents</td>
+              <td>Start sessions, spawn/wait/cancel, work/session/context/mars, <code>write</code></td>
+              <td>MCP tool (Claude Code) or bash <code>write</code> (subagents)</td>
+            </tr>
+            <tr>
+              <td><strong>Subagent</strong></td>
+              <td>Recursive <code>meridian spawn</code></td>
+              <td>Child threads + child processes with bounded capability</td>
+              <td>Bash <code>write</code> on PATH</td>
+            </tr>
+            <tr>
+              <td><strong>Webapp</strong></td>
+              <td>Human browser</td>
+              <td>Live editor, thread UI, spawn dashboard, cost/token views</td>
+              <td>TipTap/Yjs direct</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>CLI command surface (preserved)</h3>
+      <pre><code>meridian                         # primary launch
+meridian spawn [create|wait|list|show|status|cancel|...]
+meridian session [log|export|search|repair]
+meridian work [dashboard|list|show|current|path|start|switch|done|...]
+meridian context [show|work|kb|...]
+meridian mars &lt;args...&gt;
+meridian doctor [--prune|--global|--kill-orphans]
+write '{"command":"replace","file":"src/main.ts","find":"old","content":"new"}'</code></pre>
+
+      <h3>Subagent environment contract</h3>
+      <p>Each subagent inherits the session tree and receives its own bounded scope:</p>
+      <pre><code>MERIDIAN_CHAT_ID        # inherited across spawn tree
+MERIDIAN_SPAWN_ID       # this spawn's p&lt;N&gt; identifier
+MERIDIAN_PARENT_SPAWN_ID
+MERIDIAN_DEPTH          # zero-based, fail-closed on malformed
+MERIDIAN_DAEMON_URL     # how to reach the authority
+MERIDIAN_CAPABILITY_TOKEN
+MERIDIAN_TASK_DIR
+MERIDIAN_ACTIVE_WORK_DIR</code></pre>
+    </section>
+
+    <!-- ============ ARCHITECTURE ============ -->
+    <section class="section" id="architecture">
+      <h2>System architecture</h2>
+
+      <pre class="mermaid">
+flowchart LR
+  Human --> CLI[meridian CLI]
+  CC[Claude Code] --> CLI
+  CC --> MCP[MCP write server]
+  Sub[Subagent] --> CLI
+  Browser --> WS[HTTP / WS]
+
+  CLI --> Daemon[Local daemon]
+  MCP --> Daemon
+  WS --> Daemon
+
+  Daemon --> SQLite[(SQLite WAL)]
+  Daemon --> Yjs[Yjs doc authority]
+  Daemon --> Harness[Harness supervisor]
+  Harness --> CCN[Claude Code native]
+  Harness --> API[Unified API agents]
+
+  Daemon -.-> Cloud[Yjs peer sync → flow cloud]
+      </pre>
+
+      <h3>Package structure (pnpm workspace)</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Path</th><th>Role</th></tr></thead>
+          <tbody>
+            <tr><td><code>apps/cli</code></td><td>CLI entrypoint, command parser, daemon RPC client</td></tr>
+            <tr><td><code>apps/daemon</code></td><td>Authority process: HTTP/RPC/WS server, composition root</td></tr>
+            <tr><td><code>apps/web</code></td><td>React/TanStack/Vite web UI, built &amp; served by daemon</td></tr>
+            <tr><td><code>apps/mcp-write</code></td><td>stdio MCP facade for Claude Code write tool</td></tr>
+            <tr><td><code>packages/core</code></td><td>Spawn/session/thread/work domain services</td></tr>
+            <tr><td><code>packages/db</code></td><td>Drizzle schema, migrations, repositories</td></tr>
+            <tr><td><code>packages/collab-local</code></td><td>agent-edit port adapters, Y.Doc cache, file projection</td></tr>
+            <tr><td><code>packages/capabilities</code></td><td>Write/read/search bindings, capability enforcement</td></tr>
+            <tr><td><code>packages/harness</code></td><td>Claude Code native + unified API harness supervisor</td></tr>
+            <tr><td><code>packages/mars-bridge</code></td><td>mars subprocess adapter, launch-bundle parser</td></tr>
+            <tr><td><code>packages/config</code></td><td>Config precedence, env/CLI/YAML merge, root resolution</td></tr>
+            <tr><td><code>packages/platform</code></td><td>Process trees, paths, sandbox strategy, OS abstractions</td></tr>
+            <tr><td><code>packages/observability</code></td><td>Event sink, OTel spans, metrics, trace context</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Dependency direction</h3>
+      <p>Stable dependency direction: apps → packages → shared flow packages. Shared flow packages are library dependencies, not a forked app base.</p>
+      <pre class="mermaid">
+flowchart BT
+  subgraph shared["Shared (from meridian-flow npm)"]
+    agent-edit["@meridian/agent-edit"]
+    contracts
+    prosemirror-schema
+    markup
+  end
+
+  subgraph packages["meridian v1 packages"]
+    collab-local --> agent-edit
+    capabilities --> collab-local
+    core --> db & platform & observability
+    harness --> core & capabilities
+    mars-bridge --> config
+  end
+
+  subgraph apps["meridian v1 apps"]
+    daemon --> core & db & collab-local & harness & observability
+    cli --> core & config & mars-bridge
+    mcp-write --> capabilities
+    web --> contracts & capabilities
+  end
+      </pre>
+    </section>
+
+    <!-- ============ WRITE SEAM ============ -->
+    <section class="section" id="write-seam">
+      <h2>CRDT write seam</h2>
+      <p>Three bindings, one authority. The authority is <code>WriteService</code>, composed in the daemon from <code>@meridian/agent-edit</code> plus local adapters.</p>
+
+      <pre class="mermaid">
+flowchart TD
+  Agent --> Binding["Binding (MCP / CLI / in-process)"]
+  Binding --> WS["Daemon WriteService"]
+  WS --> Auth["1. authorize(capability, path)"]
+  WS --> Core["2. AgentEditCore.write(command, context)"]
+  Core --> YDoc["Y.Doc mutation"]
+  Core --> Journal["SQLite journal append"]
+  WS --> Proj["3. File projection refresh"]
+  WS --> Outcome["WriteOutcome { status, text, writeId? }"]
+  Outcome --> Return["Binding returns WriteOutcome.text"]
+      </pre>
+
+      <h3>Binding 1: MCP tool (Claude Code primary)</h3>
+      <p>Claude Code stays native for subscription auth and TUI. Deny <code>Edit</code>, <code>Write</code>, <code>NotebookEdit</code> in <code>.claude/settings.json</code>. Supply <code>write</code> as an MCP tool via <code>.mcp.json</code> (stdio transport).</p>
+      <p>Schema imports <code>WriteCommandSchema</code> directly from <code>@meridian/agent-edit</code>. Tool result is <code>WriteOutcome.text</code> — already LLM-readable, zero translation.</p>
+
+      <h3>Binding 2: bash <code>write</code> CLI (subagents)</h3>
+      <pre><code># JSON form (canonical)
+write '{"command":"replace","file":"src/main.ts","find":"old","content":"new"}'
+
+# Friendly flags (compile to same WriteCommand)
+write replace --file src/main.ts --find "old" --content "new"
+write undo --file src/main.ts --last 1</code></pre>
+      <p>Reads context from env (<code>MERIDIAN_SPAWN_ID</code>, <code>MERIDIAN_CAPABILITY_TOKEN</code>, etc.), POSTs to daemon, prints <code>WriteOutcome.text</code>, exits 0/1/2.</p>
+
+      <h3>Binding 3: in-process (API agents)</h3>
+      <p>Embedded/API agents call <code>WriteService</code> directly inside the daemon. Same <code>WriteCommandSchema</code>, same outcome type.</p>
+
+      <h3>Command schema (stable, from <code>@meridian/agent-edit</code>)</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Command</th><th>Required</th><th>Optional</th></tr></thead>
+          <tbody>
+            <tr><td><code>create</code></td><td><code>file</code></td><td>content, overwrite</td></tr>
+            <tr><td><code>read</code></td><td><code>file</code></td><td>in, around, format</td></tr>
+            <tr><td><code>insert</code></td><td><code>file</code>, <code>content</code></td><td>after, before, find, in, around, all</td></tr>
+            <tr><td><code>replace</code></td><td><code>file</code>, <code>content</code></td><td>find, in, around, all</td></tr>
+            <tr><td><code>undo</code></td><td><code>file</code></td><td>to, from, last, all</td></tr>
+            <tr><td><code>redo</code></td><td><code>file</code></td><td>to, from, last, all</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>File → CRDT projection</h3>
+      <div class="card-grid">
+        <div class="card">
+          <div class="card-title">Cold open</div>
+          <div class="card-body">Disk file parsed through code/prose codec → ProseMirror blocks → Y.Doc checkpoint if no journal exists.</div>
+        </div>
+        <div class="card">
+          <div class="card-title">Active session</div>
+          <div class="card-body">Yjs authoritative. Agent writes + human edits mutate Y.Doc first, then refresh file projection.</div>
+        </div>
+        <div class="card">
+          <div class="card-title">External change</div>
+          <div class="card-body">Watcher classifies as external edit. If Y.Doc active, import as concurrent update. If inactive, disk stays authority.</div>
+        </div>
+        <div class="card">
+          <div class="card-title">Large/binary files</div>
+          <div class="card-body">Not tracked by default. <code>write</code> rejects binary or over-limit files unless explicit codec exists.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ HARNESS ============ -->
+    <section class="section" id="harness">
+      <h2>Harness architecture</h2>
+      <p>v1 avoids rebuilding five native harness adapters. Two harness classes:</p>
+
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Class</th><th>Examples</th><th>Write binding</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><strong>Claude Code native</strong></td>
+              <td><code>claude -p --output-format stream-json</code></td>
+              <td>MCP <code>write</code> + bash fallback</td>
+            </tr>
+            <tr>
+              <td><strong>Unified API harness</strong></td>
+              <td>Anthropic API, OpenAI, Gemini, AI SDK</td>
+              <td>In-process <code>WriteService</code></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p>Cursor, Pi, OpenCode, Codex native adapters are not v1 surface. They can stay in 0.x legacy or be represented through the unified API harness.</p>
+
+      <h3>Spawn lifecycle (preserved)</h3>
+      <pre><code>queued → running → finalizing → succeeded
+                 ↘               ↗
+                  → failed / cancelled / timed_out</code></pre>
+      <p>Terminal state is monotonic. Completion report evidence wins over late cancel signals.</p>
+
+      <h3>Just-bash model for subagent writes</h3>
+      <div class="card-grid">
+        <div class="card">
+          <div class="card-title">Advisory mode</div>
+          <div class="card-body">Deny Edit/Write in settings, put <code>write</code> first on PATH, detect out-of-band changes as external edits.</div>
+        </div>
+        <div class="card">
+          <div class="card-title">Strict CRDT mode</div>
+          <div class="card-body">OS sandbox with read-only source roots. Daemon write broker is the only writer. Writable dirs granted for temp/build.</div>
+        </div>
+        <div class="card">
+          <div class="card-title">Capability elevation</div>
+          <div class="card-body">Commands that intentionally mutate outside CRDT (dep install, generated targets) need explicit grants, shown in UI/events.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ DATA MODEL ============ -->
+    <section class="section" id="data-model">
+      <h2>Data model (SQLite)</h2>
+      <p>SQLite WAL replaces runtime files as authoritative state. Drizzle ORM, transactional writes, append-only journals where order matters.</p>
+
+      <details>
+        <summary>Core identity tables</summary>
+        <div class="detail-body">
+          <pre><code>projects (id, root_path, created_at, last_opened_at)
+id_counters (scope, kind, next_int)   -- p&lt;N&gt;, c&lt;N&gt; monotonic per project</code></pre>
+        </div>
+      </details>
+
+      <details>
+        <summary>Sessions, threads, turns</summary>
+        <div class="detail-body">
+          <pre><code>sessions (id c&lt;N&gt;, project_id, root_thread_id, status, active_work_id)
+threads  (id, session_id, parent_thread_id, spawn_id, harness, model,
+          system_prompt_hash, system_prompt_snapshot, status)
+turns    (id, thread_id, response_id, ordinal, status, usage_json)</code></pre>
+          <p>Thread status: <code>open</code> | <code>stale</code> | <code>closed</code>. System prompt frozen at creation — preserves provider cache.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary>Spawns table</summary>
+        <div class="detail-body">
+          <pre><code>spawns (
+  id p&lt;N&gt;, project_id, session_id, thread_id, parent_id, depth,
+  harness, kind, model, agent_name, agent_path, goal, skills_json,
+  control_root, task_cwd, execution_cwd, launch_mode,
+  capability_json, capability_token_hash,
+  status, terminal_origin, error, exit_code,
+  worker_pid, runner_pid, last_heartbeat_at,
+  token_input, token_output, cost_usd, duration_ms,
+  revision, created_at, updated_at
+)</code></pre>
+          <p>Indexed on <code>(project_id, status, started_at)</code>, <code>parent_id</code>, <code>session_id</code>, <code>work_id</code>.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary>Documents and file projection</summary>
+        <div class="detail-body">
+          <pre><code>documents (id, project_id, relative_path, kind, codec, tracking_status,
+           disk_hash, yjs_head_seq, last_projected_at)
+thread_documents (thread_id, document_id, role, first/last_seen_turn_id)</code></pre>
+        </div>
+      </details>
+
+      <details>
+        <summary>Agent-edit journal and reversal tables</summary>
+        <div class="detail-body">
+          <pre><code>document_yjs_heads        -- per-document sequence tracking
+document_yjs_updates      -- (document_id, seq, update_blob, origin, actor_id, write_id)
+document_yjs_checkpoints  -- compacted state snapshots
+agent_edit_wid_counters   -- w&lt;N&gt; per (document, thread)
+agent_edit_mutations      -- mutation metadata per write
+document_yjs_reversals    -- undo/redo operations
+document_yjs_reversal_ops -- reversal update sequences</code></pre>
+        </div>
+      </details>
+
+      <details>
+        <summary>Events and observability table</summary>
+        <div class="detail-body">
+          <pre><code>events (id, project_id, seq, event_type, severity, spawn_id,
+        session_id, thread_id, turn_id, trace_id, span_id,
+        payload_json, raw_text, created_at)
+-- Indexed: (spawn_id, created_at), (thread_id, created_at),
+--          (project_id, event_type, created_at DESC)</code></pre>
+        </div>
+      </details>
+    </section>
+
+    <!-- ============ CAPABILITY ============ -->
+    <section class="section" id="capability">
+      <h2>Capability &amp; security</h2>
+
+      <h3>Capability model</h3>
+      <pre><code>SpawnCapability {
+  own: PermissionSet,        // what this spawn may do
+  delegation: PermissionSet, // what its children may do
+  max_depth: number          // depth limit
+}
+
+Invariant:
+  child.own        ≤ parent.delegation
+  child.delegation ≤ parent.delegation
+  child.max_depth  ≤ parent.max_depth - 1</code></pre>
+
+      <h3>Enforcement points</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Boundary</th><th>Enforcement</th></tr></thead>
+          <tbody>
+            <tr><td>CLI → daemon</td><td>Capability token required. Daemon loads stored capability, ignores caller claims.</td></tr>
+            <tr><td>MCP/CLI <code>write</code></td><td>Validate token, actor, file grant, command grant, sandbox mode before path resolution.</td></tr>
+            <tr><td>Spawn creation</td><td>Parent delegation checked before row reservation. Blocked = depth/capability error, no side effects.</td></tr>
+            <tr><td>Harness launch</td><td>Environment built from grants. Secrets and unknown <code>MERIDIAN_*</code> stripped.</td></tr>
+            <tr><td>Sandbox</td><td>OS strategy enforces file/command/network subset feasible on host.</td></tr>
+            <tr><td>Webapp</td><td>Local user trusted. Remote binding requires explicit auth + project grants.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Sandbox modes</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Mode</th><th>Meaning</th></tr></thead>
+          <tbody>
+            <tr><td><code>read-only</code></td><td>Source roots read-only via OS sandbox. Writes only through daemon <code>write</code> broker.</td></tr>
+            <tr><td><code>workspace-write</code></td><td>Approved workspace paths writable. CRDT tracked files still prefer <code>write</code>.</td></tr>
+            <tr><td><code>danger-full-access</code></td><td>No filesystem containment. Capability enforcement still applies to daemon APIs.</td></tr>
+            <tr><td><code>none</code></td><td>Uncontained local execution. Explicit &amp; visible. For harnesses that can't be sandboxed.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Secrets</h3>
+      <p>Secrets are grants, not ambient env inheritance. Default child env strips <code>*_TOKEN</code>, <code>*_KEY</code>, <code>*_SECRET</code> unless explicitly granted. Materialization to env vars is explicit per-grant.</p>
+    </section>
+
+    <!-- ============ THREADS ============ -->
+    <section class="section" id="threads">
+      <h2>Thread model</h2>
+      <p>Threads are conversation/runtime objects. Spawns are process/lifecycle objects. A spawn normally owns one thread.</p>
+
+      <h3>Cache invariant</h3>
+      <div class="callout">
+        <strong>System prompts are immutable after thread creation.</strong>
+        This preserves provider prompt-cache behavior. Updated context flows through tool results
+        and explicit read/search calls. When context drifts too far, create a new thread (hot-swap)
+        with a fresh prompt — don't mutate the existing one.
+      </div>
+
+      <h3>Thread lifecycle</h3>
+      <pre><code>Created → Running → Stale (context drift) → HotSwapped → Closed
+                  ↘                                         ↗
+                   → Closed (completed or cancelled)</code></pre>
+
+      <h3>Thread creation steps</h3>
+      <ol>
+        <li>Resolve config and mars launch bundle</li>
+        <li>Resolve work/task/context roots</li>
+        <li>Assemble system prompt (agent body + skills + invariants + capability instructions + context summary)</li>
+        <li>Hash and store <code>system_prompt_snapshot</code> + <code>context_snapshot_json</code></li>
+        <li>Freeze prompt for thread lifetime</li>
+        <li>Launch harness with thread IDs and capability context</li>
+      </ol>
+
+      <h3>Parent-child relationships (preserved)</h3>
+      <p><code>MERIDIAN_CHAT_ID</code> inherited across spawn tree. <code>MERIDIAN_SPAWN_ID</code> identifies current.
+      <code>MERIDIAN_PARENT_SPAWN_ID</code> links parent. <code>MERIDIAN_DEPTH</code> zero-based, fail-closed.
+      Tree views use stored <code>parent_id</code>, not env inspection.</p>
+    </section>
+
+    <!-- ============ OBSERVABILITY ============ -->
+    <section class="section" id="observability">
+      <h2>Observability</h2>
+      <p>A product surface, not a log tail bolted on later.</p>
+
+      <h3>Event families</h3>
+      <div class="card-grid">
+        <div class="card">
+          <div class="card-title">Spawn lifecycle</div>
+          <div class="card-body"><code>spawn.created</code>, <code>.running</code>, <code>.finalizing</code>, <code>.finalized</code>, <code>.cancel_requested</code></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Harness events</div>
+          <div class="card-body"><code>harness.event</code>, <code>.error</code>, <code>thread.created</code>, <code>.hot_swapped</code></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Write events</div>
+          <div class="card-body"><code>write.started</code>, <code>.completed</code>, <code>.failed</code>, <code>document.tracked</code>, <code>.projected</code>, <code>.external_change</code></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Security events</div>
+          <div class="card-body"><code>sandbox.violation</code>, <code>capability.denied</code>, <code>mars.command</code></div>
+        </div>
+      </div>
+
+      <h3>OpenTelemetry spans</h3>
+      <pre><code>meridian.cli.command
+meridian.spawn.reserve / .launch
+meridian.harness.turn / .tool_call
+meridian.write / .agent_edit.core_write
+meridian.yjs.journal_append
+meridian.document.projection_refresh
+meridian.mars.launch_bundle
+meridian.sandbox.exec</code></pre>
+
+      <h3>Performance targets</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Operation</th><th style="font-variant-numeric:tabular-nums;text-align:right">Target</th><th>Key choice</th></tr></thead>
+          <tbody>
+            <tr><td><code>write</code> CLI round trip</td><td style="text-align:right">&lt;50ms</td><td>Persistent daemon, HTTP, no Node cold start per write</td></tr>
+            <tr><td>Webapp TTI</td><td style="text-align:right">&lt;1s</td><td>Serve built assets, lazy-load editor, indexed SQLite</td></tr>
+            <tr><td>Spawn creation</td><td style="text-align:right">&lt;100ms</td><td>Resolve-before-persist, single DB txn, cached mars catalog</td></tr>
+            <tr><td>Spawn list (1000)</td><td style="text-align:right">&lt;10ms</td><td>Indexed query</td></tr>
+            <tr><td>Y.Doc open</td><td style="text-align:right">&lt;25ms hot</td><td>LRU live docs, checkpoints, compacted journals</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ============ MARS ============ -->
+    <section class="section" id="mars">
+      <h2>Mars integration</h2>
+      <p>mars-agents stays Rust and stays the prompt package manager. v1 does not reimplement package resolution, lock ownership, target lowering, model aliases, or launch-bundle construction.</p>
+
+      <h3>Contract</h3>
+      <ul>
+        <li><code>meridian mars &lt;args&gt;</code> passthrough with <code>--root</code> injection and <code>MERIDIAN_MANAGED=1</code></li>
+        <li>Bundled/sibling <code>mars</code> binary resolution before PATH</li>
+        <li><code>mars build launch-bundle --json</code> schema v3 as launch policy authority</li>
+        <li>Agent catalog from <code>.mars/agents/</code>, not harness-native target dirs</li>
+        <li>Mars exit codes 0–3 propagated</li>
+      </ul>
+
+      <h3>What simplifies</h3>
+      <p>v1 only needs Claude Code native target materialization + canonical <code>.mars/</code>. Five harness targets in mars itself stay until mars changes — reducing configured targets is a template choice, not a meridian reimplementation.</p>
+    </section>
+
+    <!-- ============ CLOUD SYNC ============ -->
+    <section class="section" id="cloud-sync">
+      <h2>Cloud sync (optional)</h2>
+      <p>Local SQLite/Yjs remains authoritative when offline. Cloud sync is a peer, not a controller.</p>
+
+      <h3>Sync scope</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Syncable</th><th>Local-only</th></tr></thead>
+          <tbody>
+            <tr>
+              <td>Yjs document updates/checkpoints, document metadata, thread/turn events, optional event summaries</td>
+              <td>Secrets, raw env snapshots, absolute paths, sandbox/process details, private prompt paths</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p>Protocol: meridian-flow's Yjs WebSocket (<code>/ws/yjs</code> prefix). Room names map to document IDs. The local daemon acts as a Yjs peer, not a remote database client.</p>
+    </section>
+
+    <!-- ============ PRIOR ART ============ -->
+    <section class="section" id="prior-art">
+      <h2>Prior art synthesis</h2>
+      <p>Patterns studied from 6 reference architectures, distilled to what v1 should steal.</p>
+
+      <div class="prior-art-grid">
+        <div class="prior-art-card">
+          <div class="name">Pi</div>
+          <div class="insight">Two-level provider seam (wire protocol vs vendor). Pure event-driven agent loop. I/O mode adapters over shared session.</div>
+        </div>
+        <div class="prior-art-card">
+          <div class="name">OpenCode</div>
+          <div class="insight">Per-request instance routing via header/query. SSE with register-before-stream. Effect-TS + Drizzle on SQLite WAL.</div>
+        </div>
+        <div class="prior-art-card">
+          <div class="name">Claude Agent SDK</div>
+          <div class="insight">NDJSON stream protocol. Permission interception hooks (<code>canUseTool</code>). Session store dual-write. Agent as declarative data.</div>
+        </div>
+        <div class="prior-art-card">
+          <div class="name">CopilotKit</div>
+          <div class="insight">Runtime bridge between web UI and agent. Streaming via server-sent events. Frontend-registered actions as tools.</div>
+        </div>
+        <div class="prior-art-card">
+          <div class="name">LangGraph</div>
+          <div class="insight">Graph-based orchestration with checkpoints. State-machine for control flow. Persistence adapters for multiple backends.</div>
+        </div>
+        <div class="prior-art-card">
+          <div class="name">Omnigent</div>
+          <div class="insight">Meta-harness via <code>executor.harness</code>. Runner/server split. Stateful policy (cost caps, access controls). Child sessions as first-class objects.</div>
+        </div>
+      </div>
+
+      <h3>Common patterns adopted</h3>
+      <ul>
+        <li><strong>Authority daemon + thin clients</strong> (Pi, OpenCode, Omnigent) → our daemon + CLI/MCP/web model</li>
+        <li><strong>Harness abstraction layer</strong> (Pi, Omnigent, AI SDK) → our two-class harness</li>
+        <li><strong>SQLite WAL as local state</strong> (OpenCode) → our data model</li>
+        <li><strong>Structured event stream</strong> (OpenCode SSE, Claude SDK NDJSON) → our event sink</li>
+        <li><strong>Agent as declarative data</strong> (Claude SDK, Pi) → our mars agent catalog</li>
+        <li><strong>Capability/policy enforcement at authority</strong> (Omnigent) → our capability model</li>
+      </ul>
+
+      <h3>Unique to v1</h3>
+      <p>None of the studied systems have CRDT collaborative editing between human and agent. This is the product gap v1 fills.</p>
+    </section>
+
+    <!-- ============ INVARIANTS ============ -->
+    <section class="section" id="invariants">
+      <h2>Invariant registry</h2>
+      <p>Implementation checklist. <span class="tag tag-carry">carry</span> = preserve agent-facing behavior.
+      <span class="tag tag-redesign">redesign</span> = behavior stays, implementation changes.
+      <span class="tag tag-break">break</span> = intentionally dropped.</p>
+
+      <details>
+        <summary><span class="tag tag-carry">carry</span> Agent-facing contracts</summary>
+        <div class="detail-body">
+          <ul>
+            <li>Spawn statuses: queued, running, finalizing, succeeded, failed, cancelled, timed_out</li>
+            <li>Spawn transition graph and terminal monotonicity</li>
+            <li>Completion report evidence wins over late cancel</li>
+            <li><code>p&lt;N&gt;</code> spawn IDs and <code>c&lt;N&gt;</code> chat IDs — CLI-visible, monotonic</li>
+            <li>Parent/depth: <code>parent_id</code>, <code>MERIDIAN_PARENT_SPAWN_ID</code>, zero-based depth, fail-closed</li>
+            <li><code>MERIDIAN_CHAT_ID</code> inherited across spawn tree</li>
+            <li>Work attachment precedence: explicit > ambient session > --from inheritance</li>
+            <li>Config merge: CLI flags > env > YAML/profile > config defaults</li>
+            <li>Core env exports: spawn, parent, project, depth, chat, task dir, context dirs</li>
+            <li>CLI command paths: spawn, session, work, context, mars, doctor</li>
+            <li>Spawn refs: <code>@latest</code>, <code>@last-failed</code>, <code>@last-completed</code>, <code>p123</code></li>
+            <li>Fork policy: <code>--fork</code> identity-locked, <code>--fork-fresh</code> allows changes</li>
+            <li>Control protocol semantics: inject/interrupt/permission meanings preserved</li>
+            <li>Mars passthrough, launch-bundle v3, filesystem contract</li>
+          </ul>
+        </div>
+      </details>
+
+      <details>
+        <summary><span class="tag tag-redesign">redesign</span> Internals changing</summary>
+        <div class="detail-body">
+          <ul>
+            <li>Runtime persistence: JSON files → SQLite tables (crash recovery preserved)</li>
+            <li>Harness layer: five adapters → Claude Code native + unified API</li>
+            <li>Terminal event extraction: explicit API events replace per-harness classifiers</li>
+            <li>Session transcripts: structured events/turns replace raw history.jsonl</li>
+            <li>Control socket: per-spawn sockets → daemon RPC</li>
+            <li>Observability: structlog → event sink + OTel</li>
+            <li>File authority: SQLite/Yjs/daemon replace files-as-authority for runtime</li>
+            <li>Agent-edit adapters: Postgres/Hocuspocus → local SQLite/in-process</li>
+            <li>Capability model: D8 audit → enforced runtime</li>
+          </ul>
+        </div>
+      </details>
+
+      <details>
+        <summary><span class="tag tag-break">break</span> Intentionally dropped</summary>
+        <div class="detail-body">
+          <ul>
+            <li>Files-as-runtime-state (<code>spawns/&lt;id&gt;/state.json</code>)</li>
+            <li><code>history.jsonl</code> as transcript authority</li>
+            <li>Native Cursor/Pi/OpenCode/Codex adapters</li>
+            <li>Global <code>spawns.jsonl</code> and legacy telemetry JSONL</li>
+            <li>Prompt body sidecar files → system prompt snapshots in SQLite</li>
+            <li>Per-harness target sprawl in default templates</li>
+          </ul>
+        </div>
+      </details>
+    </section>
+
+    <!-- ============ BUILD ORDER ============ -->
+    <section class="section" id="build-order">
+      <h2>Build order</h2>
+      <p>Each step proves a vertical slice. The first step is the differentiator proof.</p>
+
+      <ol class="build-steps">
+        <li>
+          <strong>Prove the write seam</strong><br>
+          <code>write</code> CLI/MCP → daemon → in-memory <code>AgentEditCore</code> → stdout/tool-result.
+          Validates CRDT write is viable end-to-end.
+        </li>
+        <li>
+          <strong>SQLite journal + Y.Doc coordinator</strong><br>
+          <code>UpdateJournal</code>/<code>ReversalStore</code> on SQLite, document lifecycle, in-process Y.Doc cache.
+        </li>
+        <li>
+          <strong>File tracking + source codec</strong><br>
+          Line-oriented codec with exact round-trip. Disk → Y.Doc → disk projection.
+          Tree-sitter-aware blocks are a later optimization.
+        </li>
+        <li>
+          <strong>Core spawn/session/thread/work schema</strong><br>
+          SQLite tables, CLI daemon client, the full spawn lifecycle.
+        </li>
+        <li>
+          <strong>Claude Code native launch</strong><br>
+          Deny rules, MCP write tool, controlled env, process scope, stream parsing.
+        </li>
+        <li>
+          <strong>Webapp</strong><br>
+          Live editor + dashboard over the same daemon. TipTap/Yjs integration.
+        </li>
+        <li>
+          <strong>Unified API harness</strong><br>
+          In-process tools, embeddable agents, normalized events.
+        </li>
+        <li>
+          <strong>Cloud Yjs peer sync</strong><br>
+          Optional. Connect local daemon as Yjs peer to meridian-flow cloud.
+        </li>
+      </ol>
+    </section>
+
+    <!-- ============ OPEN QUESTIONS ============ -->
+    <section class="section" id="open-questions">
+      <h2>Open questions</h2>
+      <p>Decisions needing proof or a committed implementation choice before each relevant build step.</p>
+
+      <ul class="question-list">
+        <li><strong>Q1 Package pin:</strong> Target current <code>h/v3</code> agent-edit with <code>SyncStateStore</code>, or the <code>draft-simplify</code> successor with <code>interactionContext</code> and branch-peer docs? Recommendation: pin the successor before building adapters.</li>
+        <li><strong>Q2 Web stack:</strong> TanStack Start, Vite+React, or other? Must: static assets from daemon, fast local TTI, Yjs/TipTap integration, Tailscale-hostable.</li>
+        <li><strong>Q3 Unified API harness:</strong> Vercel AI SDK vs direct provider SDKs. Criteria: tool-call streaming, cancellation, usage accounting, provider escape hatches.</li>
+        <li><strong>Q4 Sandbox depth:</strong> How far v1 goes on read-only roots, writable build dirs, mediated git/package-manager per OS. The seam is defined; feasibility needs probes.</li>
+        <li><strong>Q5 Code codec:</strong> Start line-oriented or invest in tree-sitter blocks? Rec: line-oriented with round-trip tests, block IDs designed for later tree-sitter swap.</li>
+        <li><strong>Q6 Daemon transport:</strong> HTTP default. If benchmarks miss &lt;50ms, switch to UDS/named pipes without changing capability contracts.</li>
+        <li><strong>Q7 Migration path:</strong> Big-bang v1 alongside 0.x, or importer for 0.x sessions/spawns? No real-user compat needed, but dogfooding may need import tooling.</li>
+        <li><strong>Q8 Cloud metadata:</strong> Which thread/event/session metadata should meridian-flow store alongside Yjs updates? What auth model for Tailscale/cloud peers?</li>
+        <li><strong>Q9 Work item authority:</strong> Is <code>__status.json</code> compatibility/export only, or co-authority for work status?</li>
+        <li><strong>Q10 MCP hosting:</strong> Is <code>apps/mcp-write</code> always a daemon RPC client, or can it be in-process via future daemon-managed Claude transport?</li>
+      </ul>
+    </section>
+
+  </main>
+</div>
+
+<script>
+  // Theme
+  function toggleTheme() {
+    document.documentElement.classList.toggle('dark');
+    const isDark = document.documentElement.classList.contains('dark');
+    localStorage.setItem('theme', isDark ? 'dark' : 'light');
+    renderMermaid();
+  }
+  if (localStorage.getItem('theme') === 'dark' ||
+      (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    document.documentElement.classList.add('dark');
+  }
+
+  // Mermaid
+  async function renderMermaid() {
+    const isDark = document.documentElement.classList.contains('dark');
+    mermaid.initialize({
+      startOnLoad: false,
+      theme: isDark ? 'dark' : 'default',
+      flowchart: { curve: 'basis', nodeSpacing: 50, rankSpacing: 60 },
+    });
+    // Reset rendered diagrams so mermaid re-renders them
+    document.querySelectorAll('.mermaid[data-processed]').forEach(el => {
+      el.removeAttribute('data-processed');
+      el.innerHTML = el.getAttribute('data-original');
+    });
+    await mermaid.run({ querySelector: '.mermaid' });
+  }
+
+  // Store original mermaid source before first render
+  document.querySelectorAll('.mermaid').forEach(el => {
+    el.setAttribute('data-original', el.innerHTML);
+  });
+  renderMermaid();
+
+  // Sidebar active state tracking
+  const links = document.querySelectorAll('.nav-link');
+  const sections = document.querySelectorAll('.section');
+
+  function updateActive() {
+    let current = '';
+    for (const section of sections) {
+      const rect = section.getBoundingClientRect();
+      if (rect.top <= 80) current = section.id;
+    }
+    links.forEach(link => {
+      link.classList.toggle('active', link.getAttribute('href') === '#' + current);
+    });
+  }
+
+  window.addEventListener('scroll', updateActive, { passive: true });
+  updateActive();
+</script>
+</body>
+</html>

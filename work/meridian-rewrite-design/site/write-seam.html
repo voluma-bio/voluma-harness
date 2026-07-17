@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CRDT Write Seam — Voluma v1</title>
+<link rel="stylesheet" href="shared.css">
+<script src="shared.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<style>
+  .page-lede {
+    max-width: 69ch;
+    margin-bottom: 24px;
+    font-size: 16px;
+    line-height: 1.65;
+    color: var(--text-secondary);
+  }
+
+  .authority-note {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 12px;
+    align-items: start;
+    margin: 0 0 28px;
+    padding: 15px 16px;
+    background: var(--bg-accent);
+    border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--border));
+    border-radius: 8px;
+  }
+
+  .authority-note strong {
+    font-size: 13px;
+    color: var(--accent);
+  }
+
+  .authority-note p {
+    margin: 0;
+    font-size: 13px;
+    color: var(--text-secondary);
+  }
+
+  .section-intro {
+    max-width: 72ch;
+    margin-bottom: 16px;
+  }
+
+  .binding {
+    padding: 22px 0;
+    border-top: 1px solid var(--border);
+  }
+
+  .binding:first-of-type { padding-top: 4px; border-top: 0; }
+  .binding:last-of-type { padding-bottom: 6px; }
+
+  .binding-heading {
+    display: flex;
+    align-items: baseline;
+    gap: 9px;
+    margin: 0 0 10px;
+    color: var(--text);
+  }
+
+  .binding-number {
+    color: var(--accent);
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 700;
+  }
+
+  .binding-heading h3 {
+    margin: 0;
+    color: var(--text);
+    font-size: 16px;
+  }
+
+  .binding ul { margin-bottom: 0; }
+  .binding li { max-width: 76ch; }
+
+  .binding .binding-summary {
+    max-width: 75ch;
+    margin-bottom: 10px;
+  }
+
+  .command-example {
+    max-width: 720px;
+    margin: 12px 0 10px;
+  }
+
+  .command-example code { white-space: pre; }
+
+  .schema-table td:first-child,
+  .schema-table td:nth-child(2) {
+    font-family: var(--mono);
+    font-size: 12px;
+  }
+
+  .schema-table td:first-child {
+    font-weight: 600;
+    color: var(--accent);
+    white-space: nowrap;
+  }
+
+  .projection-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+  }
+
+  .projection-grid .card {
+    min-height: 154px;
+    padding: 17px;
+  }
+
+  .projection-grid .card-title {
+    font-size: 14px;
+    margin-bottom: 8px;
+  }
+
+  @media (max-width: 640px) {
+    .page-lede { font-size: 15px; }
+    .authority-note { grid-template-columns: 1fr; gap: 4px; }
+    .projection-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <a href="index.html" class="topbar-title">Voluma v1</a>
+  <span class="topbar-crumb">Design</span>
+  <span class="topbar-spacer"></span>
+  <nav class="topbar-nav" aria-label="Design pages">
+    <a href="index.html">Overview</a>
+    <a href="architecture.html">Architecture</a>
+    <a href="write-seam.html" class="active" aria-current="page">Write seam</a>
+    <a href="harness.html">Harness</a>
+    <a href="data-model.html">Data model</a>
+    <a href="runtime.html">Runtime</a>
+    <a href="integration.html">Integration</a>
+  </nav>
+  <button class="theme-toggle" type="button" onclick="toggleTheme()" aria-label="Toggle color theme">&#9790;</button>
+</header>
+
+<main class="content">
+  <h1>CRDT Write Seam</h1>
+  <p class="page-lede"><strong>Three bindings, one authority.</strong> The authority is <code>WriteService</code>, composed in the daemon from <code>@voluma/agent-edit</code> plus local adapters. All agent writes land in the same Yjs document, so human and agent edits merge by construction.</p>
+
+  <aside class="authority-note" aria-label="Write authority decision">
+    <strong>One write path</strong>
+    <p>Bindings change how an agent reaches the daemon, not the behavior of the write. Authorization, CRDT mutation, journaling, projection, and LLM-readable feedback stay behind <code>WriteService</code>.</p>
+  </aside>
+
+  <h2>Write flow</h2>
+  <p class="section-intro">Every agent-facing route resolves to the same daemon service. The journal records the mutation before the projected file refreshes, and callers receive a concise outcome instead of transport-specific data.</p>
+  <div class="mermaid" role="img" aria-label="Write flow from agent through a binding and daemon WriteService to authorization, AgentEditCore, Yjs, the SQLite journal, file projection, and a WriteOutcome returned to the binding">
+flowchart TD
+  Agent --> Binding["Binding (MCP / CLI / in-process)"]
+  Binding --> WS["Daemon WriteService"]
+  WS --> Auth["1. authorize(capability, path)"]
+  Auth --> Core["2. AgentEditCore.write(command, context)"]
+  Core --> YDoc["Y.Doc mutation"]
+  Core --> Journal["SQLite journal append"]
+  Journal --> Proj["3. File projection refresh"]
+  Proj --> Outcome["WriteOutcome { status, text, writeId? }"]
+  Outcome --> Return["Binding returns WriteOutcome.text"]
+  </div>
+
+  <h2>Three bindings</h2>
+  <p class="section-intro">Each binding keeps its host environment native while preserving the same command schema and result contract.</p>
+
+  <section class="binding" aria-labelledby="mcp-binding">
+    <div class="binding-heading">
+      <span class="binding-number">01</span>
+      <h3 id="mcp-binding">MCP tool, Claude Code primary</h3>
+    </div>
+    <ul>
+      <li>Claude Code stays native for subscription authentication and its TUI.</li>
+      <li>Deny <code>Edit</code>, <code>Write</code>, and <code>NotebookEdit</code> in <code>.claude/settings.json</code>.</li>
+      <li>Supply <code>write</code> as an MCP tool through <code>.mcp.json</code> over stdio.</li>
+      <li>The tool schema imports <code>WriteCommandSchema</code> from <code>@voluma/agent-edit</code>.</li>
+      <li>The tool result is <code>WriteOutcome.text</code>, already LLM-readable and requiring no translation.</li>
+    </ul>
+  </section>
+
+  <section class="binding" aria-labelledby="cli-binding">
+    <div class="binding-heading">
+      <span class="binding-number">02</span>
+      <h3 id="cli-binding">bash <code>write</code> CLI, subagents</h3>
+    </div>
+    <p class="binding-summary">The CLI accepts the canonical JSON command or a friendly flag form, reads spawn context from the environment, POSTs to the daemon, prints <code>WriteOutcome.text</code>, and exits <code>0</code>, <code>1</code>, or <code>2</code>.</p>
+    <pre class="command-example"><code># JSON form (canonical)
+write '{"command":"replace","file":"src/main.ts","find":"old","content":"new"}'
+
+# Friendly flags
+write replace --file src/main.ts --find "old" --content "new"
+write undo --file src/main.ts --last 1</code></pre>
+    <p><code>MERIDIAN_SPAWN_ID</code> and <code>MERIDIAN_CAPABILITY_TOKEN</code> supply the invocation context.</p>
+  </section>
+
+  <section class="binding" aria-labelledby="in-process-binding">
+    <div class="binding-heading">
+      <span class="binding-number">03</span>
+      <h3 id="in-process-binding">In-process, API agents</h3>
+    </div>
+    <p>Embedded and API agents call <code>WriteService</code> directly inside the daemon. They use the same schema and receive the same outcome as MCP and CLI callers.</p>
+  </section>
+
+  <h2>Command schema</h2>
+  <p class="section-intro">The service surface stays small: six commands, one file target, and optional locality controls for precise edits.</p>
+  <div class="table-wrap">
+    <table class="schema-table">
+      <thead>
+        <tr>
+          <th scope="col">Command</th>
+          <th scope="col">Required</th>
+          <th scope="col">Optional</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td><code>create</code></td><td><code>file</code></td><td>content, overwrite</td></tr>
+        <tr><td><code>read</code></td><td><code>file</code></td><td>in, around, format</td></tr>
+        <tr><td><code>insert</code></td><td><code>file</code>, <code>content</code></td><td>after, before, find, in, around, all</td></tr>
+        <tr><td><code>replace</code></td><td><code>file</code>, <code>content</code></td><td>find, in, around, all</td></tr>
+        <tr><td><code>undo</code></td><td><code>file</code></td><td>to, from, last, all</td></tr>
+        <tr><td><code>redo</code></td><td><code>file</code></td><td>to, from, last, all</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>File → CRDT projection</h2>
+  <p class="section-intro">A file only becomes collaborative through a codec and an active Yjs document. The projection keeps on-disk tools in the loop without letting disk writes bypass the authority.</p>
+  <div class="card-grid projection-grid">
+    <article class="card">
+      <div class="card-title">Cold open</div>
+      <div class="card-body">A disk file is parsed through a code or prose codec into ProseMirror blocks, then checkpointed into the <code>Y.Doc</code> when no journal exists.</div>
+    </article>
+    <article class="card">
+      <div class="card-title">Active session</div>
+      <div class="card-body">Yjs is authoritative. Agent writes and human edits mutate the <code>Y.Doc</code> first; the file projection refreshes afterward.</div>
+    </article>
+    <article class="card">
+      <div class="card-title">External change</div>
+      <div class="card-body">The watcher classifies an external edit. With an active <code>Y.Doc</code>, it imports a concurrent update; when inactive, disk remains the authority.</div>
+    </article>
+    <article class="card">
+      <div class="card-title">Large or binary files</div>
+      <div class="card-body">These files are not tracked by default. <code>write</code> rejects binary or over-limit files unless an explicit codec exists.</div>
+    </article>
+  </div>
+</main>
+
+</body>
+</html>

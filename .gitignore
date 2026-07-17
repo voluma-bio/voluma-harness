@@ -1,0 +1,24 @@
+# Mars / Meridian generated + local state
+.mars
+.meridian
+mars.lock
+mars.local.toml
+meridian.local.toml
+
+# Generated harness target dirs (owned by `mars sync`)
+.claude
+.codex
+.opencode
+.pi
+# Cursor: share project rules only; ignore skills and other local IDE state
+.cursor/*
+!.cursor/rules/
+!.cursor/rules/**
+
+# Env / local
+.env
+.env.local
+.local/
+
+# Node
+node_modules/

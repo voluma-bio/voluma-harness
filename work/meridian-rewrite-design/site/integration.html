@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Integration &amp; roadmap — Voluma v1</title>
+<link rel="stylesheet" href="shared.css">
+<script src="shared.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+</head>
+<body>
+
+<header class="topbar">
+  <a href="index.html" class="topbar-title">Voluma v1</a>
+  <span class="topbar-crumb">Integration &amp; roadmap</span>
+  <span class="topbar-spacer"></span>
+  <nav class="topbar-nav" aria-label="Design pages">
+    <a href="index.html">Overview</a>
+    <a href="architecture.html">Architecture</a>
+    <a href="write-seam.html">Write seam</a>
+    <a href="harness.html">Harness</a>
+    <a href="data-model.html">Data model</a>
+    <a href="runtime.html">Runtime</a>
+    <a href="integration.html" class="active" aria-current="page">Integration</a>
+  </nav>
+  <button class="theme-toggle" type="button" onclick="toggleTheme()" aria-label="Toggle color theme">&#9790;</button>
+</header>
+
+<main class="content">
+  <h1>Integration &amp; roadmap</h1>
+  <p>v1 keeps Mars as the prompt-package authority, treats cloud sync as an optional Yjs peer, and preserves the agent-facing contracts that make the rewrite safe to adopt.</p>
+
+  <div class="callout">
+    <strong>Boundary decision:</strong> the daemon owns local runtime state and collaboration; Mars owns prompt-package resolution and launch policy. Cloud replication never becomes a control plane.
+  </div>
+
+  <section aria-labelledby="mars-integration">
+    <h2 id="mars-integration">Mars integration</h2>
+    <p><code>mars-agents</code> stays Rust and stays the prompt package manager. v1 does not reimplement package resolution, lock ownership, target lowering, model aliases, or launch-bundle construction.</p>
+
+    <h3>Contract</h3>
+    <ul>
+      <li><code>voluma mars &lt;args&gt;</code> passthrough with <code>--root</code> injection and <code>VOLUMA_MANAGED=1</code></li>
+      <li>Bundled or sibling <code>mars</code> binary resolution before <code>PATH</code></li>
+      <li><code>mars build launch-bundle --json</code> schema v3 as launch policy authority</li>
+      <li>Agent catalog from <code>.mars/agents/</code>, not harness-native target directories</li>
+      <li>Mars exit codes 0–3 propagated unchanged</li>
+    </ul>
+
+    <p><strong>What simplifies:</strong> v1 only needs Claude Code native target materialization plus canonical <code>.mars/</code>. The five harness targets remain until Mars changes.</p>
+  </section>
+
+  <section aria-labelledby="cloud-sync">
+    <h2 id="cloud-sync">Cloud sync <span style="font-size:12px;font-weight:600;color:var(--text-muted)">(optional)</span></h2>
+    <p>Local SQLite and Yjs remain authoritative when offline. Cloud sync is a peer, not a controller.</p>
+
+    <div class="mermaid">
+flowchart LR
+  subgraph Local[Local machine]
+    D[voluma daemon]
+    S[(SQLite)]
+    Y[Y.Doc coordinator]
+    D --> S
+    D --> Y
+  end
+  F[Voluma hosted<br/>/ws/yjs] <--> |document-ID room| Y
+  W[Web editor] <--> D
+    </div>
+
+    <h3>Sync scope</h3>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th scope="col">Syncable</th>
+            <th scope="col">Local-only</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Yjs document updates and checkpoints, document metadata, thread and turn events, optional event summaries</td>
+            <td>Secrets, raw environment snapshots, absolute paths, sandbox and process details, private prompt paths</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p><strong>Protocol:</strong> meridian-flow’s Yjs WebSocket at the <code>/ws/yjs</code> prefix. Room names map to document IDs. The local daemon acts as a Yjs peer, not a remote database client.</p>
+  </section>
+
+  <section aria-labelledby="prior-art">
+    <h2 id="prior-art">Prior art synthesis</h2>
+    <p>The studied systems agree on authority boundaries, structured streams, and durable local state. v1 adopts those patterns without surrendering local-first collaboration.</p>
+
+    <div class="prior-art-grid">
+      <article class="prior-art-card">
+        <div class="name">Pi</div>
+        <p class="insight">Two-level provider seam, wire protocol versus vendor. Pure event-driven agent loop. I/O mode adapters over a shared session.</p>
+      </article>
+      <article class="prior-art-card">
+        <div class="name">OpenCode</div>
+        <p class="insight">Per-request instance routing via header or query. SSE with register-before-stream. Effect-TS plus Drizzle on SQLite WAL.</p>
+      </article>
+      <article class="prior-art-card">
+        <div class="name">Claude Agent SDK</div>
+        <p class="insight">NDJSON stream protocol. Permission interception hooks (<code>canUseTool</code>). Session store dual-write. Agent as declarative data.</p>
+      </article>
+      <article class="prior-art-card">
+        <div class="name">CopilotKit</div>
+        <p class="insight">Runtime bridge between web UI and agent. Streaming via server-sent events. Frontend-registered actions as tools.</p>
+      </article>
+      <article class="prior-art-card">
+        <div class="name">LangGraph</div>
+        <p class="insight">Graph-based orchestration with checkpoints. State machine for control flow. Persistence adapters for multiple backends.</p>
+      </article>
+      <article class="prior-art-card">
+        <div class="name">Omnigent</div>
+        <p class="insight">Meta-harness via <code>executor.harness</code>. Runner and server split. Stateful policy, including cost caps and access controls. Child sessions are first-class objects.</p>
+      </article>
+    </div>
+
+    <h3>Common patterns adopted</h3>
+    <ul>
+      <li><strong>Authority daemon + thin clients</strong> (Pi, OpenCode, Omnigent) → daemon + CLI/MCP/web model</li>
+      <li><strong>Harness abstraction layer</strong> (Pi, Omnigent, AI SDK) → two-class harness</li>
+      <li><strong>SQLite WAL as local state</strong> (OpenCode) → data model</li>
+      <li><strong>Structured event stream</strong> (OpenCode SSE, Claude SDK NDJSON) → event sink</li>
+      <li><strong>Agent as declarative data</strong> (Claude SDK, Pi) → Mars agent catalog</li>
+      <li><strong>Capability/policy enforcement at authority</strong> (Omnigent) → capability model</li>
+    </ul>
+
+    <div class="callout"><strong>Unique to v1:</strong> none of the studied systems have CRDT collaborative editing between human and agent.</div>
+  </section>
+
+  <section aria-labelledby="invariants">
+    <h2 id="invariants">Invariant registry</h2>
+    <p>These distinctions make the rewrite explicit: what agents can rely on, what changes behind the boundary, and what is intentionally removed.</p>
+
+    <details open>
+      <summary>Carry <span class="tag tag-carry">agent-facing contracts</span></summary>
+      <div class="detail-body">
+        <ul>
+          <li>Spawn statuses: <code>queued</code>, <code>running</code>, <code>finalizing</code>, <code>succeeded</code>, <code>failed</code>, <code>cancelled</code>, <code>timed_out</code></li>
+          <li>Spawn transition graph and terminal monotonicity</li>
+          <li>Completion report evidence wins over late cancel</li>
+          <li><code>p&lt;N&gt;</code> spawn IDs and <code>c&lt;N&gt;</code> chat IDs, monotonic</li>
+          <li>Parent/depth: <code>parent_id</code>, <code>MERIDIAN_PARENT_SPAWN_ID</code>, zero-based depth, fail-closed</li>
+          <li><code>MERIDIAN_CHAT_ID</code> inherited across spawn tree</li>
+          <li>Work attachment precedence: explicit &gt; ambient session &gt; <code>--from</code> inheritance</li>
+          <li>Config merge: CLI flags &gt; environment &gt; YAML/profile &gt; config defaults</li>
+          <li>CLI command paths: <code>spawn</code>, <code>session</code>, <code>work</code>, <code>context</code>, <code>mars</code>, <code>doctor</code></li>
+          <li>Spawn refs: <code>@latest</code>, <code>@last-failed</code>, <code>@last-completed</code>, <code>p123</code></li>
+          <li>Fork policy: <code>--fork</code> identity-locked; <code>--fork-fresh</code> allows changes</li>
+          <li>Mars passthrough, launch-bundle v3, filesystem contract</li>
+        </ul>
+      </div>
+    </details>
+
+    <details>
+      <summary>Redesign <span class="tag tag-redesign">internals changing</span></summary>
+      <div class="detail-body">
+        <ul>
+          <li>Runtime persistence: JSON files → SQLite tables</li>
+          <li>Harness layer: five adapters → Claude Code native + unified API</li>
+          <li>Terminal event extraction: explicit API events replace per-harness classifiers</li>
+          <li>Session transcripts: structured events and turns replace raw <code>history.jsonl</code></li>
+          <li>Control socket: per-spawn sockets → daemon RPC</li>
+          <li>Observability: structlog → event sink + OpenTelemetry</li>
+          <li>File authority: SQLite/Yjs/daemon replace files-as-authority</li>
+          <li>Agent-edit adapters: Postgres/Hocuspocus → local SQLite/in-process</li>
+          <li>Capability model: D8 audit → enforced runtime</li>
+        </ul>
+      </div>
+    </details>
+
+    <details>
+      <summary>Break <span class="tag tag-break">intentionally dropped</span></summary>
+      <div class="detail-body">
+        <ul>
+          <li>Files-as-runtime-state (<code>spawns/&lt;id&gt;/state.json</code>)</li>
+          <li><code>history.jsonl</code> as transcript authority</li>
+          <li>Native Cursor, Pi, OpenCode, and Codex adapters</li>
+          <li>Global <code>spawns.jsonl</code> and legacy telemetry JSONL</li>
+          <li>Prompt body sidecar files → system prompt snapshots in SQLite</li>
+          <li>Per-harness target sprawl in default templates</li>
+        </ul>
+      </div>
+    </details>
+  </section>
+
+  <section aria-labelledby="build-order">
+    <h2 id="build-order">Build order</h2>
+    <p>Start at the authority seam, then add the durable state that allows every later surface to share it.</p>
+    <ol>
+      <li><strong>Prove the write seam</strong> — <code>write</code> CLI/MCP → daemon → AgentEditCore → stdout</li>
+      <li><strong>SQLite journal + Y.Doc coordinator</strong> — UpdateJournal/ReversalStore on SQLite</li>
+      <li><strong>File tracking + source codec</strong> — line-oriented with exact round-trip</li>
+      <li><strong>Core spawn/session/thread/work schema</strong> — SQLite tables, CLI daemon client</li>
+      <li><strong>Claude Code native launch</strong> — deny rules, MCP write tool, stream parsing</li>
+      <li><strong>Webapp</strong> — live editor + dashboard over the same daemon</li>
+      <li><strong>Unified API harness</strong> — in-process tools, embeddable agents</li>
+      <li><strong>Cloud Yjs peer sync</strong> — optional, connect as a Yjs peer to flow cloud</li>
+    </ol>
+  </section>
+
+  <section aria-labelledby="open-questions">
+    <h2 id="open-questions">Open questions</h2>
+    <ol>
+      <li><strong>Q1 Package pin:</strong> Target <code>h/v3</code> agent-edit or <code>draft-simplify</code> successor?</li>
+      <li><strong>Q2 Web stack:</strong> TanStack Start, Vite+React, or other?</li>
+      <li><strong>Q3 Unified API harness:</strong> Vercel AI SDK vs direct provider SDKs?</li>
+      <li><strong>Q4 Sandbox depth:</strong> How far on OS-level read-only roots per platform?</li>
+      <li><strong>Q5 Code codec:</strong> Line-oriented start or tree-sitter blocks?</li>
+      <li><strong>Q6 Daemon transport:</strong> HTTP default, UDS/pipes if &lt;50ms missed?</li>
+      <li><strong>Q7 Migration:</strong> Big-bang alongside 0.x, or session importer?</li>
+      <li><strong>Q8 Cloud metadata:</strong> What thread/event metadata does flow store alongside Yjs?</li>
+      <li><strong>Q9 Work authority:</strong> <code>__status.json</code> compat only or co-authority?</li>
+      <li><strong>Q10 MCP hosting:</strong> Always daemon RPC, or in-process via future transport?</li>
+    </ol>
+  </section>
+</main>
+
+</body>
+</html>
