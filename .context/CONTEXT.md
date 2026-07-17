@@ -25,16 +25,20 @@ broker (D1 RequestContext) picks the route, fails over on block with consent +
 budget check, hard-quarantines routes that ban us, and never offers prohibited
 ones.
 
-**The three root causes** (the seams under design):
-- **D1** — authenticated RequestContext: surfaces authenticate, `lib/ops`
-  authorizes `{principal, project, capability, channel, requestId}`. Never infer
-  root from surface, token, env, or cwd.
-- **D2 (decided)** — identity: portable `{replica_id, local_seq}`; `(project,
+**The three root causes** (all ratified 2026-07-16):
+- **D1** — daemon-constructed RequestContext: surfaces authenticate, `lib/ops`
+  authorizes `{principal, project, capability, channel, requestId}`.
+  Spawn-scoped bearer + daemon-issued invocation lease; broker-mediated
+  secrets; two-field `enforcement_assurance`. Never infer root from surface,
+  token, env, or cwd.
+- **D2** — identity: portable `{replica_id, local_seq}`; `(project,
   ordinal)` as a display alias; workspace/mount identity separate from portable
   document identity; HLC ordering with replica_id tiebreaker.
 - **D3** — event/outcome/catalog: private raw provider events / versioned typed
-  domain events (the public surface for queries/webhooks/replay) / an explicit
-  `RunOutcome` completion authority. Same shape pins the mars catalog per spawn.
+  domain events (the public surface for queries/webhooks/replay) / durable
+  singular `RunOutcome` via one `finalize()` transaction. Mars = compiler with
+  `dirty -> publishing -> published` state machine; ResolvedLaunchPlan + typed
+  LaunchBindings. §13 honesty pass: rename = atomic Break, no shim.
 
 **Write seam (C4).** The CRDT `write` capability is the differentiator and must
 be an authority protocol — idempotency key, planning base, transactional

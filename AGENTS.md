@@ -10,12 +10,13 @@ cloud/sync backend is a separate repo (`voluma`).
 MIT (open-core — the moat is the cloud, not the harness). May be forked into
 `meridian-flow`, a writing-focused vertical.
 
-## Status: pre-build
+## Status: build gate closed (2026-07-16), build-prep next
 
-The architecture is **not a build target yet**. Two root-cause decisions gate
-it — **D1** (authenticated RequestContext) and **D3** (event/outcome/catalog
-split) are unratified; **D2** (identity) is decided. Do not implement against
-`v1-architecture.md` until D1 and D3 land; everything downstream inherits them.
+**D1, D2, D3 and the §13 honesty pass are all ratified** — decided models in
+`meridian-rewrite-design/review/root-cause-decisions.md`. `v1-architecture.md`
+is buildable **through the decided models**: it predates ratification and
+carries a supersession banner — where its text conflicts with the decided
+models, the decided models win. Folding them in is the first build-prep task.
 See `.context/TODO`.
 
 ## Mental model
@@ -33,7 +34,9 @@ See `.context/TODO`.
 
 ## Key rules
 
-- **Build gate:** D1 + D3 unratified → `v1-architecture.md` is design, not spec.
+- **Build gate closed:** implement against the ratified decided models
+  (`review/root-cause-decisions.md`); `v1-architecture.md` text yields to them
+  wherever they conflict, until the fold-in lands.
 - **Identity is daemon-constructed, never surface-inferred.** A caller's
   channel, token, or cwd is not authorization (the C1 confused deputy). Honor
   this in every seam — it is D1.

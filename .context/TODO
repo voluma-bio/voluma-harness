@@ -1,14 +1,21 @@
-# TODO — build gate
+# TODO — build gate: CLOSED 2026-07-16
 
-Ratify before `v1-architecture.md` becomes a build target. Each blocks
-downstream packages. Full framing: `meridian-rewrite-design/review/root-cause-decisions.md`.
+All three gate items are ratified. Decided models:
+`meridian-rewrite-design/review/root-cause-decisions.md`.
 
-- [ ] D1 — authenticated RequestContext + credential model. Kills the
-  surface-as-identity confused deputy (C1); unblocks write attribution (C4) and
-  query trust (C8). Recommended option: daemon-constructed RequestContext.
-- [ ] D3 — split the one "event" into raw / typed domain event / RunOutcome.
-  Resolves the opaque HarnessEvent (C3) and the mars catalog boundary (C6).
-- [ ] §13 honesty pass — re-label overclaimed Carries; decide the
-  meridian→voluma rename rollout (compat shim vs atomic Break).
+- [x] D1 — daemon-constructed RequestContext; spawn-scoped bearer +
+  daemon-issued invocation lease; broker-mediated secrets; two-field
+  evidence-based `enforcement_assurance`; friction invariant (credential
+  machinery invisible to end users).
+- [x] D2 — identity: `{replica_id, local_seq}` portable IDs, display aliases,
+  workspace/mount split.
+- [x] D3 — raw provider event (private) / typed versioned domain events
+  (public) / durable singular RunOutcome via one `finalize()` transaction;
+  mars = compiler with `dirty → publishing → published` state machine, no
+  mars in the spawn path; ResolvedLaunchPlan + typed LaunchBindings.
+- [x] §13 honesty pass — registry relabeled against the coverage matrix
+  (v1-architecture.md §13.1–13.5); rename = atomic Break, no shim.
 
-D2 (identity) is decided — see root-cause-decisions.md.
+Next: build-prep. `v1-architecture.md` carries a supersession banner — where
+it conflicts with the decided models, the decided models win; folding them
+into its text is the first tech-lead task. Then work §13.4/§13.5 down.
